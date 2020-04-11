@@ -112,7 +112,6 @@ router.post("/register", async (ctx: ParameterizedContext) => {
 	}
 });
 
+const Controller: Router = router;
 
-const AuthController: Router = router;
-
-export default AuthController;
+export default Controller;

@@ -101,7 +101,7 @@ app.use(session(CONFIG, app));
 	router.use("/auth", authentication.AuthController.routes());
 	{ /* api */
 		router.use("/api/user", api.UserController.routes());
-		router.use("/admin/user", JWTAuthenticate, api.UserController.routes());
+		router.use("/api/file", api.FileController.routes());
 	}
 	// router.use("/api", Controller.Api);
 

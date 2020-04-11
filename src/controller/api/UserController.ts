@@ -76,6 +76,6 @@ router.del("/", async (ctx: ParameterizedContext) => {
 	});
 });
 
-const UserController: Router = router;
+const Controller: Router = router;
 
-export default UserController;
+export default Controller;
