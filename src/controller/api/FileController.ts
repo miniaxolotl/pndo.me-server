@@ -43,8 +43,9 @@ router.post("/upload", async (ctx: ParameterizedContext) => {
 
 	const file_data = await new Promise<Metadata>((resolve, reject) => {
 		upload_store.write(options, readStream, async (error, file) => {
-			const file_data = {
+			const file_data: Metadata = {
 				ref: file._id,
+				uuid: file_hash,
 				filename: file.filename,
 				type: file.contentType,
 				bytes: file.length,
@@ -68,15 +69,37 @@ router.post("/upload", async (ctx: ParameterizedContext) => {
 
 /*************************** route: /:user ***************************/
 
-router.post("/download/:id", async (ctx: ParameterizedContext) => {
+router.all("/download/:id", async (ctx: ParameterizedContext) => {
 	const req: ResgisterRequest = (ctx.request as any).fields;
-	const files: ResgisterRequest = (ctx.request as any).files;
-	if(!req || !files) { ctx.throw(invalidBody.status, invalidBody); }
 
 	const db = ctx.db;
 
+	let file_data: Metadata;
 
-	ctx.body = "HELLo!";
+	const upload_store = createModel({
+		modelName: 'uploads',
+		connection: db.connection,
+	});
+	
+	await db['uploads.metadata']
+	.findOne({ uuid: ctx.params.id }, async (err, res) => {
+		if(res === null) {
+			// do nothing
+		} else {
+		file_data = res;
+		const readStream = upload_store.read({ _id: file_data.ref });
+
+		ctx.response.set("content-type", file_data.type);
+		ctx.response.set("content-length", file_data.bytes.toString());
+		ctx.response.set("accept-ranges", "bytes");
+		ctx.response.set("connection", "keep-alive");
+		ctx.response.set("content-disposition",
+			"inline; filename="+file_data.filename);
+
+		ctx.body = readStream;
+	}
+	}).then(() => {
+	});
 });
 
 const Controller: Router = router;

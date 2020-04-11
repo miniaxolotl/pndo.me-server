@@ -1,3 +1,4 @@
+import { Types } from "mongoose";
 
 
 export interface ResgisterRequest {
@@ -36,7 +37,8 @@ export interface GridFSFile {
 };
 
 export interface Metadata {
-	ref: string;
+	ref: Types.ObjectId;
+	uuid: string;
 	filename:  string;
 	type: string;
 	owner?: string;
