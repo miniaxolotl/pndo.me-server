@@ -1,9 +1,9 @@
 import bcrypt from "./bcrypt";
-import error from "./error";
+import * as errors from "./errors";
 import TimedJWT from "./timed-jwt";
 
 export {
 	bcrypt,
-	error,
+	errors,
 	TimedJWT
 };

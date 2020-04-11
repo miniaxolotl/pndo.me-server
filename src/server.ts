@@ -11,17 +11,18 @@ import Koa, { ParameterizedContext } from 'koa';
 import cors from '@koa/cors';
 import Router from 'koa-router';
 import BodyParser from 'koa-bodyparser';
+import BetterBody from 'koa-better-body';
 import json from 'koa-json'
 import session from 'koa-session'
 
 import mongoose from 'mongoose';
 
-import { AuthController } from "./controller/Authentication";
+import { api, authentication } from "./controller";
+import { JWTAuthenticate } from './middleware';
+
 import { UserModel } from "./model"
 
 import config from "../res/config.json";
-import { UserController } from './controller/api';
-import { JWTAuthenticate } from './middleware';
 
 /*****************************
  * setup
@@ -38,7 +39,7 @@ mongoose.connect(config.db.url, {
 	useCreateIndex: true,
 	useNewUrlParser: true,
 	useUnifiedTopology: true }, (err) => {
-		// console.log(`mongodb connected`, err);
+		console.log(`mongodb connected`, err);
 	}
 );
 
@@ -66,7 +67,8 @@ const checkOriginAgainstWhitelist = (ctx: Koa.DefaultContext): string => {
  *****************************/
 
 app.use(json({ pretty: false, param: 'pretty' }))
-app.use(BodyParser());
+// app.use(BodyParser({ enableTypes: ['json', 'form', 'text']}));
+app.use(BetterBody());
 app.use(cors({
 	origin: checkOriginAgainstWhitelist,
 	credentials: true,
@@ -96,10 +98,10 @@ app.use(session(CONFIG, app));
  * routes
  *****************************/
 {
-	router.use("/auth", AuthController.routes());
+	router.use("/auth", authentication.AuthController.routes());
 	{ /* api */
-		router.use("/api/user", UserController.routes());
-		router.use("/admin/user", JWTAuthenticate, UserController.routes());
+		router.use("/api/user", api.UserController.routes());
+		router.use("/admin/user", JWTAuthenticate, api.UserController.routes());
 	}
 	// router.use("/api", Controller.Api);
 

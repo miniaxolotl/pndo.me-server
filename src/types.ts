@@ -1,15 +1,30 @@
+
+
+export interface ResgisterRequest {
+	username: string,
+	password: string,
+};
+
 /** Authentication success responce */
-export interface auth_responce_t {
-	user: {
-		profile: string;
-		email: string;
-		name: string;
-	};
+export interface UserPayload {
+	profile: string;
+	username: string;
+};
+
+/** Authentication success responce */
+export interface AuthenticationResponce {
+	user: UserPayload;
 	authorization: string;
 };
 
+export interface UserData {
+	profile: string;
+	username: string;
+	password: string;
+};
+
 /** Timestamped JWT payload */
-export interface timed_payload_t {
+export interface TimedPayload {
 	payload: {};
 	validUntil: number;
 	createdOn: number;

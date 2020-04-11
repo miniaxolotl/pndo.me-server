@@ -10,7 +10,7 @@
 import jwt from 'jsonwebtoken';
 
 import config from "../../res/config.json";
-import { timed_payload_t } from '../types.js';
+import { TimedPayload } from '../types.js';
 
 /**
  * Sign an object (string) with a specififed secret.
@@ -28,7 +28,7 @@ const sign = (payload: {}, secret: string,
 			options.expire_length : default_expire_length;
 	}
 
-	const timed_payload: timed_payload_t = {
+	const timed_payload: TimedPayload = {
 		payload,
 		validUntil: expire_date,
 		createdOn: current_time
@@ -45,8 +45,8 @@ const sign = (payload: {}, secret: string,
  * @param secret Secret to use when decrypting.
  * @returns The decrypted message.
  */
-const open = (token: string, secret: string): timed_payload_t => {
-	const token_data: timed_payload_t = Object(jwt.verify(token, secret));
+const open = (token: string, secret: string): TimedPayload => {
+	const token_data: TimedPayload = Object(jwt.verify(token, secret));
 
 	return token_data;
 };
@@ -57,9 +57,9 @@ const open = (token: string, secret: string): timed_payload_t => {
  * @param secret Secret to use when decrypting.
  * @returns The decrypted message, returns null if it's expired.
  */
-const verify = (token: string, secret: string): timed_payload_t | null => {
+const verify = (token: string, secret: string): TimedPayload | null => {
 	const current_time = new Date().getTime();
-	const token_data: timed_payload_t = Object(jwt.verify(token, secret));
+	const token_data: TimedPayload = Object(jwt.verify(token, secret));
 
 	if(current_time > token_data.validUntil) {
 		return null;
