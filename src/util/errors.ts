@@ -18,7 +18,7 @@ export const invalidBody: StatusMessage = {
 };
 
 export const invalidCredentials: StatusMessage = {
-	status: 403,
+	status: 401,
 	message: "Invalid credentials.",
 };
 

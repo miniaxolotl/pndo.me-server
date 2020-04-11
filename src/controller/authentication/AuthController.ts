@@ -21,61 +21,47 @@ import { invalidCredentials, invalidForm, serverError, duplicateUsername, invali
 const router: Router = new Router();
 
 router.post("/login", async (ctx: ParameterizedContext) => {
-	const req = ctx.request.body;
+	const req: ResgisterRequest = (ctx.request as any).fields;
+	if(!req) { ctx.throw(invalidBody.status, invalidBody); }
+
 	const db = ctx.db;
 	let user: any = null;
 
-	if(req || (!req.password || !req.email)) {
+	if(!req.username || !req.password) {
+		/* validate username/password */
 		ctx.throw(invalidForm.status, invalidForm);
-	}
+	}  else {
+		/* find user in database */
+		await db.User.findOne({ username: req.username }, async (err, res) => {
+			if(res === null) {
+				// do nothing
+			} else {
+				user = res;
+			}
+		});
 
-	await db.User.findOne({ email: req.email }, async (err, res) => {
-		if(res === null)
-		{
-			// do nothing
-		}
-		else
-		{
-			user = res;
-		}
-	});
-
-	if(user === null)
-	{
-		ctx.throw(invalidCredentials.status, invalidCredentials);
-	}
-	else
-	{
-		if(await bcrypt.compare(req.password, user.password))
-		{
-			const payload = {
-				email: user.email
-			};
-
-			const token = TimedJWT.sign(payload, config.crypt.secret);
-
-			const responce: AuthenticationResponce = {
-				user: {
-					profile: user.profile,
+		if(user === null) {
+			/* validate user */
+			ctx.throw(invalidCredentials.status, invalidCredentials);
+		} else {
+			/* create token */
+			if(await bcrypt.compare(req.password, user.password)) {
+				const payload: UserPayload = {
 					username: user.username,
-				},
-				authorization: token,
-			};
-
-			{
-				ctx.session.profile = user.profile;
-				ctx.session.email = user.email;
-				ctx.session.name = user.name;
+					profile: user.profile
+				};
+				const token = TimedJWT.sign(payload, config.crypt.secret);
+				const responce: AuthenticationResponce = {
+					user: payload,
+					authorization: token,
+				};
 
 				ctx.body = responce;
-
-				ctx.cookies.set('authorized', 'true', {httpOnly: false});
-				ctx.cookies.set('name', user.name, { httpOnly: false });
 			}
-		}
-		else
-		{
-			ctx.throw(invalidCredentials.status, invalidCredentials);
+			else
+			{
+				ctx.throw(invalidCredentials.status, invalidCredentials);
+			}
 		}
 	}
 });
@@ -109,7 +95,6 @@ router.post("/register", async (ctx: ParameterizedContext) => {
 			const user = db.User(user_data);
 			
 			await user.save().then(async (e: any) => {
-				
 				const payload: UserPayload = {
 					profile: user.profile,
 					username: user.username,
@@ -119,7 +104,6 @@ router.post("/register", async (ctx: ParameterizedContext) => {
 					user: payload,
 					authorization: token,
 				};
-				
 				ctx.body = responce;
 			}).catch(() => {
 				ctx.throw(duplicateUsername.status, duplicateUsername);
