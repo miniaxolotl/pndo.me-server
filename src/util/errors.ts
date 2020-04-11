@@ -17,6 +17,11 @@ export const invalidBody: StatusMessage = {
 	message: "Invalid body, server cannot process.",
 };
 
+export const unauthorizedAccess: StatusMessage = {
+	status: 401,
+	message: "Unauthorized access.",
+};
+
 export const invalidCredentials: StatusMessage = {
 	status: 401,
 	message: "Invalid credentials.",

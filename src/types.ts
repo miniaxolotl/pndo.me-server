@@ -25,7 +25,7 @@ export interface UserData {
 
 /** Timestamped JWT payload */
 export interface TimedPayload {
-	payload: {};
+	payload: any;
 	validUntil: number;
 	createdOn: number;
 };

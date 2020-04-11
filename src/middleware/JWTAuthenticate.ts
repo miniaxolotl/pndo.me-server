@@ -9,6 +9,8 @@
 
 import config from "../../res/config.json";
 import { TimedJWT } from "../util";
+import { unauthorizedAccess } from "util/errors";
+import { UserPayload } from "types";
 
 const secret = config.crypt.secret;
 
@@ -16,40 +18,27 @@ const secret = config.crypt.secret;
  * Validates authorization token and user.
  */
 export default async (ctx: any, next: any): Promise<void> => {
-	let token: string | null = null;
-	// const req = ctx.request.body;
+	const token = ctx.headers.authorization;
 	const db = ctx.db;
 
-	const authorization =
-	ctx.headers.authorization ? ctx.headers.authorization : null;
-
-	if(authorization != null) {
-		token = ctx.headers.authorization.split(' ')[1];
-	} else {
-		if(ctx.session.authorization.token != null) {
-			token = ctx.session.authorization.token;
-		}
-	}
-
 	if(token == null) {
-		ctx.throw(403, 'No token.');
+		ctx.throw(unauthorizedAccess.status, unauthorizedAccess);
 	} else {
 		try {
 			const authorization = TimedJWT.verify(token, secret);
-			const payload: any | null =
+			const payload: UserPayload | null =
 				authorization ? authorization.payload : null;
 			let user: any;
 
-			ctx.request.authorization = authorization;
-
-
-			await db.User.findOne({ email: payload.email },
+			await db.User.findOne({ username: payload?.username },
 				async (err, res) => {
 				user = await res;
 			});
 
 			if(user == null) {
-				ctx.throw(403, "Invalid Token");
+				ctx.throw(unauthorizedAccess.status, unauthorizedAccess);
+			} else {
+				ctx.request.authorization = authorization;
 			}
 		}
 		catch(err) {
@@ -57,5 +46,6 @@ export default async (ctx: any, next: any): Promise<void> => {
 		}
 	}
 
+	
 	await next();
   };
