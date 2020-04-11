@@ -51,7 +51,7 @@ router.post("/upload", async (ctx: ParameterizedContext) => {
 				uploaded: file.uploadDate,
 			};
 
-			metadata_store = db['fs.metadata'](file_data);
+			metadata_store = db['uploads.metadata'](file_data);
 			
 			await metadata_store.save().then(async (e: any) => {
 				// do nothing
@@ -67,6 +67,17 @@ router.post("/upload", async (ctx: ParameterizedContext) => {
 });
 
 /*************************** route: /:user ***************************/
+
+router.post("/download/:id", async (ctx: ParameterizedContext) => {
+	const req: ResgisterRequest = (ctx.request as any).fields;
+	const files: ResgisterRequest = (ctx.request as any).files;
+	if(!req || !files) { ctx.throw(invalidBody.status, invalidBody); }
+
+	const db = ctx.db;
+
+
+	ctx.body = "HELLo!";
+});
 
 const Controller: Router = router;
 

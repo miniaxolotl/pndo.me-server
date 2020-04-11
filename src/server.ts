@@ -48,7 +48,7 @@ mongoose.connect(config.db.url, {
 );
 
 mongoose.model(`User`, UserModel);
-mongoose.model(`fs.metadata`, MetadataModel);
+mongoose.model(`uploads.metadata`, MetadataModel);
 
 const Models = mongoose.models;
 app.context.db = Models;
