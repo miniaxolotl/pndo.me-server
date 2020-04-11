@@ -1,0 +1,24 @@
+{
+	"parser": "@typescript-eslint/parser",
+	"parserOptions": {
+		"ecmaVersion": 2019,
+		"sourceType": "module"
+	},
+	"plugins": [
+		"@typescript-eslint"
+	],
+	"env": {
+		"es6": true,
+		"browser": true,
+		"node": true
+	},
+	"extends": [
+	  "eslint:recommended",
+	  "plugin:@typescript-eslint/recommended"
+	],
+	"rules": {
+		"camelcase": "off",
+		"@typescript-eslint/camelcase": 0,
+		"@typescript-eslint/no-explicit-any": 0
+	}
+}

@@ -1,0 +1,31 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es2019",
+        "sourceMap": true,
+        "outDir": "./build",
+		"baseUrl": "./src/",
+
+		/* Strict Type-Checking Options */
+        "strict": true,
+		"strictPropertyInitialization": true,
+		"noImplicitAny": false,
+
+		/* Module Resolution Options */
+		"moduleResolution": "node",
+		"resolveJsonModule": true,
+		"esModuleInterop": true,
+		"isolatedModules": false,
+		"typeRoots" : ["./node_modules/@types", "./lib"],
+		"types": [
+			"node"
+		]
+    },
+	"exclude": [
+		"node_modules/"
+	],
+    "include": [
+		"./lib/**/*.d.ts",
+        "./src/**/*"
+    ]
+}

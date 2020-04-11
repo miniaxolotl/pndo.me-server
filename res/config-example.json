@@ -1,0 +1,15 @@
+{
+	"port": 1234,
+	"whitelist": [
+		"https://localhost",
+		"http://localhost"
+	],
+	"crypt": {
+		"key": "super-secret-key",
+		"salt_rounds": 10
+	},
+	"db": {
+		"port": 1234,
+		"url": "mongodb+srv://admin:<password>@mongo-db"
+	}
+}
