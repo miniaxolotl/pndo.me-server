@@ -23,6 +23,31 @@ export interface UserData {
 	password: string;
 };
 
+export interface GridFSFile {
+	_id: string;
+	filename: string;
+	contentType: string;
+	length: number;
+	chunkSize: number;
+	uploadDate: Date;
+	aliases?: string | undefined;
+	metatdata?: any | undefined;
+	md5: string;
+};
+
+export interface Metadata {
+	ref: string;
+	filename:  string;
+	type: string;
+	owner?: string;
+	protected?: boolean;
+	downloads?: number;
+	views?: number;
+	bytes: number;
+	uploaded: Date;
+	expires?: Date | null;
+}
+
 /** Timestamped JWT payload */
 export interface TimedPayload {
 	payload: any;

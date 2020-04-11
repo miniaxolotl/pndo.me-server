@@ -28,7 +28,6 @@ router.get("/all", async (ctx: ParameterizedContext) => {
 	.skip(page * limit)
 	.then((res: any[]) => {
 		ctx.body = res;
-		console.log(res);
 	});
 });
 
@@ -57,8 +56,6 @@ router.put("/", async (ctx: ParameterizedContext) => {
 	if(req.profile) { query.profile = req.profile; }
 
 	await  db.User.updateOne(query, req).then((res: any[]) => {
-		console.log(req);
-
 		ctx.body = res;
 	});
 });

@@ -16,11 +16,12 @@ import json from 'koa-json'
 import session from 'koa-session'
 
 import mongoose from 'mongoose';
+import gridfs from 'gridfs-stream';
 
 import { api, authentication } from "./controller";
 import { JWTAuthenticate } from './middleware';
 
-import { UserModel } from "./model"
+import { UserModel, MetadataModel } from "./model"
 
 import config from "../res/config.json";
 
@@ -40,13 +41,20 @@ mongoose.connect(config.db.url, {
 	useNewUrlParser: true,
 	useUnifiedTopology: true }, (err) => {
 		console.log(`mongodb connected`, err);
+
+		connection = mongoose.connection;
+		GridFS = gridfs(mongoose.connection.db, mongoose.mongo);
 	}
 );
 
 mongoose.model(`User`, UserModel);
+mongoose.model(`fs.metadata`, MetadataModel);
 
 const Models = mongoose.models;
 app.context.db = Models;
+
+export let connection;
+export let GridFS: gridfs.Grid;
 
 /*****************************
  * cors
