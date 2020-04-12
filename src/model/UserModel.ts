@@ -8,15 +8,13 @@
  */
 
 import { Schema } from 'mongoose';
+import { UserFlags } from 'types';
 
-export type flag_t = {
-	admin: boolean;
-	moderator: boolean;
-};
 
-const default_flags: flag_t = {
+const default_flags: UserFlags = {
 	admin: false,
 	moderator: false,
+	banned: false,
 };
 
 const UserModel = new Schema({

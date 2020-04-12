@@ -1,4 +1,11 @@
 import { Types } from "mongoose";
+
+export type UserFlags = {
+	admin: boolean;
+	moderator: boolean;
+	banned: boolean;
+};
+
 export interface ResgisterRequest {
 	username: string,
 	password: string,
@@ -15,18 +22,25 @@ export interface UploadRequest {
 export interface UserPayload {
 	profile: string;
 	username: string;
+	flags: UserFlags;
 };
 
-/** Authentication success responce */
-export interface AuthenticationResponce {
-	user: UserPayload;
-	authorization: string;
+export interface SanitisedUserPayload {
+	profile: string;
+	username: string;
 };
 
 export interface UserData {
 	profile: string;
 	username: string;
 	password: string;
+	flags?: UserFlags;
+};
+
+/** Authentication success responce */
+export interface AuthenticationResponce {
+	user: SanitisedUserPayload;
+	authorization: string;
 };
 
 export interface Metadata {

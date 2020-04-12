@@ -16,7 +16,7 @@ import crypto from "crypto";
 
 import { bcrypt } from "../../util";
 import TimedJWT from "../../util/timed-jwt";
-import { AuthenticationResponce, UserData, UserPayload } from "types";
+import { AuthenticationResponce, UserData, UserPayload, SanitisedUserPayload } from "types";
 import config from "../../../res/config.json"
 import { invalidCredentials, invalidForm,
 	serverError, duplicateUsername, invalidBody } from "../../util/errors";
@@ -38,7 +38,7 @@ router.post("/login", async (ctx: ParameterizedContext) => {
 		ctx.throw(invalidForm.status, invalidForm);
 	}  else {
 		/* find user in database */
-		const user: UserData
+		const user_store: UserData
 			= await new Promise<UserData>(async (res, rej) => {
 
 			await models.User.findOne({ username: req.username },
@@ -55,14 +55,20 @@ router.post("/login", async (ctx: ParameterizedContext) => {
 		});
 
 		/* create jwt */
-		if(await bcrypt.compare(req.password, user.password)) {
+		if(await bcrypt.compare(req.password, user_store.password)
+			&& user_store.flags) {
 			const payload: UserPayload = {
-				username: user.username,
-				profile: user.profile
+				username: user_store.username,
+				profile: user_store.profile,
+				flags: user_store.flags,
 			};
 			const token = TimedJWT.sign(payload, config.crypt.secret);
+			const sanitised_payload: SanitisedUserPayload = {
+				profile: user_store.profile,
+				username: user_store.username,
+			};
 			const responce: AuthenticationResponce = {
-				user: payload,
+				user: sanitised_payload,
 				authorization: token,
 			};
 
@@ -93,7 +99,7 @@ router.post("/register", async (ctx: ParameterizedContext) => {
 		const user_data: UserData = {
 			profile: profile_hash,
 			username: req.username,
-			password: password_hash
+			password: password_hash,
 		};
 		
 		const user_store = new models.User(user_data);
@@ -105,10 +111,17 @@ router.post("/register", async (ctx: ParameterizedContext) => {
 		const payload: UserPayload = {
 			profile: user_store.profile,
 			username: user_store.username,
+			flags: user_store.flags,
 		};
 		const token = TimedJWT.sign(payload, config.crypt.secret);
+		
+		const sanitised_payload: SanitisedUserPayload = {
+			profile: user_store.profile,
+			username: user_store.username,
+		};
+
 		const responce: AuthenticationResponce = {
-			user: payload,
+			user: sanitised_payload,
 			authorization: token,
 		};
 
