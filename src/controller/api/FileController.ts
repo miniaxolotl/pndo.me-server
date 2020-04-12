@@ -9,28 +9,30 @@
 
 import { ParameterizedContext } from "koa";
 import Router from 'koa-router';
-import { ResgisterRequest, Metadata, GridFSFile, MetadataSanitised } from "types";
-import { invalidBody, serverError, StatusMessage, resourceNotFound, resourceDeleted } from "../../util/errors";
-import { GridFS, connection } from "../../server";
 import mongoose, { Model, Mongoose } from 'mongoose';
-import crypto from "crypto";
-import io from 'socket.io';
-
-import { createModel } from 'mongoose-gridfs';
 
 import fs, { createReadStream } from "fs";
+import crypto from "crypto";
+import path from "path";
+
+import { ResgisterRequest, Metadata, MetadataSanitised } from "types";
+import { invalidBody, serverError,
+	resourceNotFound, resourceDeleted } from "../../util/errors";
 
 import config from "../../../res/config.json";
-import path from "path";
+
+/************************************************
+ * ANCHOR routes
+ ************************************************/
 
 const router: Router = new Router();
 
 router.post("/upload", async (ctx: ParameterizedContext) => {
-	const req: ResgisterRequest = (ctx.request as any).body;
+	const req = ctx.request.body;
+	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
+
 	const file: any = (ctx.request as any).files.file;
 	if(!req || !file) { ctx.throw(invalidBody.status, invalidBody); }
-
-	const db = ctx.db;
 
 	const file_hash = crypto.randomBytes(8).toString('hex');
 	let metadata_store: any;
@@ -52,11 +54,11 @@ router.post("/upload", async (ctx: ParameterizedContext) => {
 					bytes: file.size,
 				};
 
-				metadata_store = db['uploads.metadata'](file_data);
+				metadata_store = new models['uploads.metadata'](file_data);
 				
 				await metadata_store.save().then(async (e: any) => {
 					// do nothing
-				}).catch((e) => {
+				}).catch(() => {
 					resolve(null);
 				});
 				resolve(file_data);
@@ -70,45 +72,47 @@ router.post("/upload", async (ctx: ParameterizedContext) => {
 });
 
 router.post("/delete/:id", async (ctx: ParameterizedContext) => {
-	const req: ResgisterRequest = (ctx.request as any).body;
+	// const req: ResgisterRequest = (ctx.request as any).body;
 
-	const db = ctx.db;
+	// const db = ctx.db;
 
-	let file_data: Metadata;
+	// let file_data: Metadata;
 
-	const upload_store = createModel({
-		modelName: 'uploads',
-		connection: db.connection,
-	});
+	// const upload_store = createModel({
+	// 	modelName: 'uploads',
+	// 	connection: db.connection,
+	// });
 	
-	const status = await new Promise<boolean>(async (resolve, reject) => {
-		await (db['uploads.metadata'] as mongoose.Model<any>)
-		.findOneAndDelete({ uuid: ctx.params.id }, async (err, res) => {
-			if(res === null) {
-				resolve(false);
-			} else {
-				file_data = res;
+	// const status = await new Promise<boolean>(async (resolve, reject) => {
+	// 	await (db['uploads.metadata'] as mongoose.Model<any>)
+	// 	.findOneAndDelete({ uuid: ctx.params.id }, async (err, res) => {
+	// 		if(res === null) {
+	// 			resolve(false);
+	// 		} else {
+	// 			file_data = res;
 				
-				upload_store.unlink({ _id: file_data.ref }, (error) => {
-				});
-			}
-		}).then(() => {
-			// do nothing
-			resolve(true);
-		});
-	});
+	// 			upload_store.unlink({ _id: file_data.ref }, (error) => {
+	// 			});
+	// 		}
+	// 	}).then(() => {
+	// 		// do nothing
+	// 		resolve(true);
+	// 	});
+	// });
 	
-	if(status) {
-		ctx.status = resourceDeleted.status;
-		ctx.body = resourceDeleted;
-	} else {
-		ctx.status = resourceNotFound.status;
-		ctx.body = resourceNotFound;
-	}
+	// if(status) {
+	// 	ctx.status = resourceDeleted.status;
+	// 	ctx.body = resourceDeleted;
+	// } else {
+	// 	ctx.status = resourceNotFound.status;
+	// 	ctx.body = resourceNotFound;
+	// }
 });
 
 router.all("/stream/:id", async (ctx: ParameterizedContext) => {
-	const req: ResgisterRequest = (ctx.request as any).body;
+	const req = ctx.request.body;
+	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
+
 	const file_path = path.join(config.file_path, ctx.params.id);
 
 	const stat = fs.statSync(file_path);
@@ -145,13 +149,12 @@ router.all("/stream/:id", async (ctx: ParameterizedContext) => {
 });
 
 router.all("/download/:id", async (ctx: ParameterizedContext) => {
-	const req: ResgisterRequest = (ctx.request as any).body;
-	
-	const db = ctx.db;
+	const req = ctx.request.body;
+	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 
 	let file_data: Metadata;
 
-	await db['uploads.metadata']
+	await models['uploads.metadata']
 	.findOne({ hash: ctx.params.id }, async (err, res) => {
 		if(res === null) {
 			ctx.status = resourceNotFound.status;
@@ -177,49 +180,42 @@ router.all("/download/:id", async (ctx: ParameterizedContext) => {
 });
 
 router.all("/download/:id/:name", async (ctx: ParameterizedContext) => {
-	const req: ResgisterRequest = (ctx.request as any).body;
+	const req = ctx.request.body;
+	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 
-	const db = ctx.db;
-
-	let file_data: Metadata;
-
-	const upload_store = createModel({
-		modelName: 'uploads',
-		connection: db.connection,
-	});
+	// let file_data: Metadata;
 	
-	await db['uploads.metadata']
-	.findOne({ uuid: ctx.params.id, filename: ctx.params.name },
-		async (err, res) => {
-		if(res === null) {
-			ctx.status = resourceNotFound.status;
-			ctx.body = resourceNotFound;
-		} else {
-			file_data = res;
-			const readStream = upload_store.read({ _id: file_data.ref });
+	// await models['uploads.metadata']
+	// .findOne({ uuid: ctx.params.id, filename: ctx.params.name },
+	// 	async (err, res) => {
+	// 	if(res === null) {
+	// 		ctx.status = resourceNotFound.status;
+	// 		ctx.body = resourceNotFound;
+	// 	} else {
+	// 		file_data = res;
+	// 		const readStream = upload_store.read({ _id: file_data.ref });
 
-			ctx.response.set("content-type", 'video/webm');
-			ctx.response.set("content-length", file_data.bytes.toString());
-			ctx.response.set("accept-ranges", "bytes");
-			ctx.response.set("connection", "keep-alive");
-			ctx.response.set("content-disposition",
-				"inline; filename="+file_data.filename);
+	// 		ctx.response.set("content-type", 'video/webm');
+	// 		ctx.response.set("content-length", file_data.bytes.toString());
+	// 		ctx.response.set("accept-ranges", "bytes");
+	// 		ctx.response.set("connection", "keep-alive");
+	// 		ctx.response.set("content-disposition",
+	// 			"inline; filename="+file_data.filename);
 
-			ctx.body = readStream;
-		}
-	}).then(() => {
-		// do nothing
-	});
+	// 		ctx.body = readStream;
+	// 	}
+	// }).then(() => {
+	// 	// do nothing
+	// });
 });
 
 router.all("/info/:id", async (ctx: ParameterizedContext) => {
-	const req: ResgisterRequest = (ctx.request as any).body;
-
-	const db = ctx.db;
+	const req = ctx.request.body;
+	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 
 	let file_data: Metadata;
 
-	await db['uploads.metadata']
+	await models['uploads.metadata']
 	.findOne({ uuid: ctx.params.id }, async (err, res) => {
 		if(res === null) {
 			ctx.status = resourceNotFound.status;

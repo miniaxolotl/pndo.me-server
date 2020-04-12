@@ -16,9 +16,9 @@ const router: Router = new Router();
 
 router.all("/filestats", async (ctx: ParameterizedContext) => {
 	const req = ctx.request.body;
-	const db = ctx.db;
+	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 
-	const metadata_store = db['uploads.metadata'];
+	const metadata_store = models['uploads.metadata'];
 	let stats: MetaFile;
 
 	await metadata_store.aggregate([{
@@ -47,9 +47,9 @@ router.all("/filestats", async (ctx: ParameterizedContext) => {
 
 router.all("/userstats", async (ctx: ParameterizedContext) => {
 	const req = ctx.request.body;
-	const db = ctx.db;
+	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 
-	const user_store = db['User'];
+	const user_store = models['User'];
 	let stats: MetaFile;
 
 	await user_store.aggregate([{

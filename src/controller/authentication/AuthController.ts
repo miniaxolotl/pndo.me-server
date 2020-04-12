@@ -10,21 +10,29 @@
 import { ParameterizedContext } from "koa";
 import Router from 'koa-router';
 
+import mongoose from 'mongoose';
+
 import crypto from "crypto";
+
 import { bcrypt } from "../../util";
 import TimedJWT from "../../util/timed-jwt";
-
+import { AuthenticationResponce, UserData, UserPayload } from "types";
 import config from "../../../res/config.json"
-import { AuthenticationResponce, ResgisterRequest, UserData, UserPayload } from "types";
-import { invalidCredentials, invalidForm, serverError, duplicateUsername, invalidBody } from "../../util/errors";
+import { invalidCredentials, invalidForm,
+	serverError, duplicateUsername, invalidBody } from "../../util/errors";
+
+/************************************************
+ * ANCHOR routes
+ ************************************************/
 
 const router: Router = new Router();
 
 router.post("/login", async (ctx: ParameterizedContext) => {
-	const req: ResgisterRequest = (ctx.request as any).fields;
+	const req = ctx.request.body;
+	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
+
 	if(!req) { ctx.throw(invalidBody.status, invalidBody); }
 
-	const db = ctx.db;
 	let user: any = null;
 
 	if(!req.username || !req.password) {
@@ -32,7 +40,7 @@ router.post("/login", async (ctx: ParameterizedContext) => {
 		ctx.throw(invalidForm.status, invalidForm);
 	}  else {
 		/* find user in database */
-		await db.User.findOne({ username: req.username }, async (err, res) => {
+		await models.User.findOne({ username: req.username }, async (err, res) => {
 			if(res === null) {
 				// do nothing
 			} else {
@@ -67,11 +75,11 @@ router.post("/login", async (ctx: ParameterizedContext) => {
 });
 
 router.post("/register", async (ctx: ParameterizedContext) => {
-	const req: ResgisterRequest = (ctx.request as any).fields;
+	const req = ctx.request.body;
+	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
+
 	if(!req) { ctx.throw(invalidBody.status, invalidBody); }
 
-	const db = ctx.db;
-	
 	if(!req.username || !req.password) {
 		/* validate username/password */
 		ctx.throw(invalidForm.status, invalidForm);
@@ -92,7 +100,7 @@ router.post("/register", async (ctx: ParameterizedContext) => {
 				password: password_hash
 			};
 			
-			const user = db.User(user_data);
+			const user = new models.User(user_data);
 			
 			await user.save().then(async (e: any) => {
 				const payload: UserPayload = {

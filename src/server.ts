@@ -16,7 +16,6 @@ import session from 'koa-session'
 import websocket from 'koa-websocket'
 
 import mongoose from 'mongoose';
-import gridfs from 'gridfs-stream';
 
 import { api, authentication } from "./controller";
 import { JWTAuthenticate } from './middleware';
@@ -25,43 +24,37 @@ import { UserModel, MetadataModel } from "./model"
 
 import config from "../res/config.json";
 
-/*****************************
- * setup
- *****************************/
+/************************************************
+ * ANCHOR setup
+ ************************************************/
 
 const app: Koa = new Koa();
-const socket = websocket(app); //! enables websockets
+websocket(app); //! enables websockets
 
 const router: Router = new Router();
 const socket_router = new Router();
 
-/*****************************
- * database
- *****************************/
+/************************************************
+ * ANCHOR database
+ ************************************************/
 
 mongoose.connect(config.db.url, {
 	useCreateIndex: true,
 	useNewUrlParser: true,
 	useUnifiedTopology: true }, (err) => {
 		console.log(`mongodb connected`, err);
-
-		connection = mongoose.connection;
-		GridFS = gridfs(mongoose.connection.db, mongoose.mongo);
 	}
 );
 
 mongoose.model(`User`, UserModel);
 mongoose.model(`uploads.metadata`, MetadataModel);
 
-const Models = mongoose.models;
-app.context.db = Models;
+app.context.db = mongoose;
+app.context.models = mongoose.models;
 
-export let connection;
-export let GridFS: gridfs.Grid;
-
-/*****************************
- * cors
- *****************************/
+/************************************************
+ * ANCHOR cors
+ ************************************************/
 
 const whitelist = config.whitelist;
 
@@ -73,32 +66,27 @@ const checkOriginAgainstWhitelist = (ctx: Koa.DefaultContext): string => {
 	return requestOrigin;
 }
 
-/*****************************
- * middleware
- *****************************/
-
-const inc = {
-	maxFileSize: 2097725440,
-};
-
-app.use(json({ pretty: false, param: 'pretty' }));
-// app.use(BetterBody({ IncomingForm: { maxFileSize: 2**32, } }));
-
-app.use(Body({
-	formidable: { maxFileSize: 2**32, uploadDir: config.tmp_path },
-    multipart: true,
-	urlencoded: true,
-}));
-
 app.use(cors({
 	origin: checkOriginAgainstWhitelist,
 	credentials: true,
 	allowMethods: [ 'post', 'get', 'put', 'delete' ],
 }));
 
-/*****************************
- * sessions
- *****************************/
+/************************************************
+ * ANCHOR middleware
+ ************************************************/
+
+app.use(json({ pretty: false, param: 'pretty' }));
+
+app.use(Body({
+	formidable: { maxFileSize: 2**10, uploadDir: config.tmp_path },
+    multipart: true,
+	urlencoded: true,
+}));
+
+/************************************************
+ * ANCHOR sessions
+ ************************************************/
 
 const CONFIG: Partial<session.opts> = {
 	key: config.key,
@@ -111,23 +99,15 @@ const CONFIG: Partial<session.opts> = {
 app.keys = config.crypt.keys;
 app.use(session(CONFIG, app));
 
-/*****************************
- * auth
- *****************************/
+/************************************************
+ * ANCHOR auth
+ ************************************************/
 
-/*****************************
- * routes
- *****************************/
-(app as any).ws.use(function(ctx, next) {
-	ctx.websocket.on
-	console.log("hello");
-	
-	// return `next` to pass the context (ctx) on to the next ws middleware
-	return next(ctx);
-});
-
+/************************************************
+ * ANCHOR routes
+ ************************************************/
   
-{
+{ /* HTTP */
 	router.use("/auth", authentication.AuthController.routes());
 	{ /* api */
 		router.use("/api/user", api.UserController.routes());
@@ -149,7 +129,7 @@ app.use(session(CONFIG, app));
 	app.use(router.routes());
 }
 
-{
+{ /* WEBSOCKET */
 	socket_router.get('/socket', async (ctx: any) => {
 		ctx.websocket.send('Hey!');
 
@@ -163,9 +143,9 @@ app.use(session(CONFIG, app));
 	app.use(socket_router.routes()).use(socket_router.allowedMethods());
 }
 
-/*****************************
- * fin
- *****************************/
+/************************************************
+ * ANCHOR start server
+ ************************************************/
 
 app.listen(config.port, () => {
 	console.log(`Server listening: http://localhost:${config.port}`);

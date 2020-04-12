@@ -17,12 +17,12 @@ const router: Router = new Router();
 
 router.get("/all", async (ctx: ParameterizedContext) => {
 	const req = ctx.request.body;
-	const db = ctx.db;
+	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 
 	const limit = req.limit ? parseInt(req.limit) : 25;
 	const page = Math.abs(req.page ? req.page : 0);
 
-	await db.User.find({},
+	await models.User.find({},
 		{ password: 0, _id: 0, __v: 0 })
 	.limit(limit)
 	.skip(page * limit)
@@ -35,13 +35,13 @@ router.get("/all", async (ctx: ParameterizedContext) => {
 
 router.get("/", async (ctx: ParameterizedContext) => {
 	const req = ctx.request.body;
-	const db: { [index: string]: mongoose.Model<any, {}> } = ctx.db;
+	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 
 	const query: any = {};
 	if(req.email) { query.email = req.email; }
 	if(req.profile) { query.profile = req.profile; }
 
-	await  db.User.findOne(query,
+	await  models.User.findOne(query,
 		{ password: 0, _id: 0, __v: 0 }).then((res: any[]) => {
 		ctx.body = res;
 	});
@@ -49,26 +49,26 @@ router.get("/", async (ctx: ParameterizedContext) => {
 
 router.put("/", async (ctx: ParameterizedContext) => {
 	const req = ctx.request.body;
-	const db: { [index: string]: mongoose.Model<any, {}> } = ctx.db;
+	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 
 	const query: any = {};
 	if(req.email) { query.email = req.email; }
 	if(req.profile) { query.profile = req.profile; }
 
-	await  db.User.updateOne(query, req).then((res: any[]) => {
+	await  models.User.updateOne(query, req).then((res: any[]) => {
 		ctx.body = res;
 	});
 });
 
 router.del("/", async (ctx: ParameterizedContext) => {
 	const req = ctx.request.body;
-	const db: { [index: string]: mongoose.Model<any, {}> } = ctx.db;
+	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 
 	const query: any = {};
 	if(req.email) { query.email = req.email; }
 	if(req.profile) { query.profile = req.profile; }
 
-	await  db.User.deleteOne(query).then((res: any) => {
+	await  models.User.deleteOne(query).then((res: any) => {
 		ctx.body = res;
 	});
 });

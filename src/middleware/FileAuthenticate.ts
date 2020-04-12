@@ -45,7 +45,6 @@ export default async (ctx: any, next: any): Promise<void> => {
 			ctx.throw(err.status || 403, err.text);
 		}
 	}
-
 	
 	await next();
   };
