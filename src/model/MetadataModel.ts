@@ -10,13 +10,7 @@
 import { Schema, Types } from 'mongoose';
 
 const MetadataModel = new Schema({
-	ref: {
-		type: Types.ObjectId,
-		required: true,
-		unique: true,
-		trim: true,
-	},
-	uuid: {
+	hash: {
 		type: String,
 		required: true,
 		unique: true,

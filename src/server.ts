@@ -10,13 +10,10 @@
 import Koa, { ParameterizedContext } from 'koa';
 import cors from '@koa/cors';
 import Router from 'koa-router';
-// import BodyParser from 'koa-bodyparser';
-import BetterBody from 'koa-better-body';
 import Body from 'koa-body';
 import json from 'koa-json'
 import session from 'koa-session'
-
-import formidable from 'formidable';
+import websocket from 'koa-websocket'
 
 import mongoose from 'mongoose';
 import gridfs from 'gridfs-stream';
@@ -33,7 +30,10 @@ import config from "../res/config.json";
  *****************************/
 
 const app: Koa = new Koa();
+const socket = websocket(app); //! enables websockets
+
 const router: Router = new Router();
+const socket_router = new Router();
 
 /*****************************
  * database
@@ -81,17 +81,17 @@ const inc = {
 	maxFileSize: 2097725440,
 };
 
-app.use(json({ pretty: false, param: 'pretty' }))
+app.use(json({ pretty: false, param: 'pretty' }));
 // app.use(BetterBody({ IncomingForm: { maxFileSize: 2**32, } }));
 
 app.use(Body({
-	formidable: { maxFileSize: 2**32, uploadDir: './data/files', keepExtensions: true },
+	formidable: { maxFileSize: 2**32, uploadDir: config.tmp_path },
     multipart: true,
 	urlencoded: true,
 }));
 
 app.use(cors({
-	// origin: checkOriginAgainstWhitelist,
+	origin: checkOriginAgainstWhitelist,
 	credentials: true,
 	allowMethods: [ 'post', 'get', 'put', 'delete' ],
 }));
@@ -118,6 +118,15 @@ app.use(session(CONFIG, app));
 /*****************************
  * routes
  *****************************/
+(app as any).ws.use(function(ctx, next) {
+	ctx.websocket.on
+	console.log("hello");
+	
+	// return `next` to pass the context (ctx) on to the next ws middleware
+	return next(ctx);
+});
+
+  
 {
 	router.use("/auth", authentication.AuthController.routes());
 	{ /* api */
@@ -139,6 +148,21 @@ app.use(session(CONFIG, app));
 
 	app.use(router.routes());
 }
+
+{
+	socket_router.get('/socket', async (ctx: any) => {
+		ctx.websocket.send('Hey!');
+
+		ctx.websocket.on('message', function (message) {
+			console.log(message);
+		});
+
+		console.log(ctx);
+	});
+
+	app.use(socket_router.routes()).use(socket_router.allowedMethods());
+}
+
 /*****************************
  * fin
  *****************************/

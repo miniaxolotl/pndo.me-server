@@ -14,54 +14,57 @@ import { invalidBody, serverError, StatusMessage, resourceNotFound, resourceDele
 import { GridFS, connection } from "../../server";
 import mongoose, { Model, Mongoose } from 'mongoose';
 import crypto from "crypto";
+import io from 'socket.io';
 
 import { createModel } from 'mongoose-gridfs';
 
 import fs, { createReadStream } from "fs";
 
+import config from "../../../res/config.json";
+import path from "path";
+
 const router: Router = new Router();
 
 router.post("/upload", async (ctx: ParameterizedContext) => {
 	const req: ResgisterRequest = (ctx.request as any).body;
-	const files: any = (ctx.request as any).files;
-	if(!req || !files) { ctx.throw(invalidBody.status, invalidBody); }
+	const file: any = (ctx.request as any).files.file;
+	if(!req || !file) { ctx.throw(invalidBody.status, invalidBody); }
 
 	const db = ctx.db;
 
-	const file_hash = crypto.randomBytes(4).toString('hex');
+	const file_hash = crypto.randomBytes(8).toString('hex');
 	let metadata_store: any;
 
-	const upload_store = createModel({
-		modelName: 'uploads',
-		connection: db.connection,
-		chunkSizeBytes: 2**22
-	});
+	const tmp_path = file.path;
+	const file_path = path.join(config.file_path, file_hash);
 
-	const readStream = fs.createReadStream(files.file.path);
-	const options
-		= ({ filename: files.file.name, contentType: files.file.type })
+	const file_data = await new Promise<Metadata | null>((resolve, reject) => {
+		fs.rename(tmp_path, file_path, async (err) => {
+			if(err) {
+				reject(err);
+			} else {
+				console.log(file);
+				
+				const file_data: Metadata = {
+					hash: file_hash,
+					filename: file.name,
+					type: file.type,
+					bytes: file.size,
+				};
 
-	const file_data = await new Promise<Metadata>((resolve, reject) => {
-		upload_store.write(options, readStream, async (error, file) => {
-			const file_data: Metadata = {
-				ref: file._id,
-				uuid: file_hash,
-				filename: file.filename,
-				type: file.contentType,
-				bytes: file.length,
-				uploaded: file.uploadDate,
-			};
-
-			metadata_store = db['uploads.metadata'](file_data);
-			
-			await metadata_store.save().then(async (e: any) => {
-				// do nothing
-			}).catch((e) => {
-				reject(serverError);
-			});
-			resolve(file_data);
+				metadata_store = db['uploads.metadata'](file_data);
+				
+				await metadata_store.save().then(async (e: any) => {
+					// do nothing
+				}).catch((e) => {
+					resolve(null);
+				});
+				resolve(file_data);
+			}
 		});
 	});
+
+	if(!file_data) { ctx.throw(serverError.status, serverError); }
 
 	ctx.body = file_data;
 });
@@ -104,6 +107,43 @@ router.post("/delete/:id", async (ctx: ParameterizedContext) => {
 	}
 });
 
+router.all("/stream/:id", async (ctx: ParameterizedContext) => {
+	const req: ResgisterRequest = (ctx.request as any).body;
+	const file_path = path.join(config.file_path, ctx.params.id);
+
+	const stat = fs.statSync(file_path);
+	const fileSize = stat.size
+	const range = ctx.headers.range
+	if (range) {
+		const parts = range.replace(/bytes=/, "").split("-");
+		const start = parseInt(parts[0], 10);
+		const end = parts[1]
+		? parseInt(parts[1], 10)
+		: fileSize-1;
+		const chunksize = (end-start)+1;
+		const file = fs.createReadStream(file_path, {start, end});
+		ctx.response.set("content-type", 'video/webm');
+		ctx.response.set("content-length", chunksize.toString());
+		ctx.response.set("accept-ranges", "bytes");
+		ctx.response.set("content-range", `bytes ${start}-${end}/${fileSize}`);
+		ctx.response.set("connection", "keep-alive");
+		ctx.response.set("content-disposition",
+			"inline; filename=hello.mkv");
+		
+		ctx.status = 206;
+		ctx.body = file;
+	} else {
+		ctx.response.set("content-length", fileSize.toString());
+		ctx.response.set("content-type", 'video/webm');
+		ctx.response.set("content-disposition",
+			"inline; filename=hello.mkv");
+		
+		ctx.status = 200;
+		ctx.body = fs.createReadStream(file_path)
+		.on('error', () => { console.log('hello') });
+	}
+});
+
 router.all("/download/:id", async (ctx: ParameterizedContext) => {
 	const req: ResgisterRequest = (ctx.request as any).body;
 	
@@ -111,19 +151,16 @@ router.all("/download/:id", async (ctx: ParameterizedContext) => {
 
 	let file_data: Metadata;
 
-	const upload_store = createModel({
-		modelName: 'uploads',
-		connection: db.connection,
-	});
-	
 	await db['uploads.metadata']
-	.findOne({ uuid: ctx.params.id }, async (err, res) => {
+	.findOne({ hash: ctx.params.id }, async (err, res) => {
 		if(res === null) {
 			ctx.status = resourceNotFound.status;
 			ctx.body = resourceNotFound;
 		} else {
 			file_data = res;
-			const readStream = upload_store.read({ _id: file_data.ref });
+
+			const file_path = path.join(config.file_path, res.hash);
+			const readStream = fs.createReadStream(file_path);
 
 			ctx.response.set("content-type", file_data.type);
 			ctx.response.set("content-length", file_data.bytes.toString());
@@ -190,14 +227,13 @@ router.all("/info/:id", async (ctx: ParameterizedContext) => {
 		} else {
 		file_data = res;
 		const responce: MetadataSanitised = {
-			id: file_data.uuid,
+			hash: file_data.uuid,
 			filename: file_data.filename,
 			type: file_data.type,
 			owner: file_data.owner ? file_data.owner : null,
 			downloads: file_data.downloads,
 			views: file_data.views,
 			bytes: file_data.bytes,
-			uploaded: file_data.uploaded,
 			expires: file_data.expires,
 		};
 		ctx.body = responce;

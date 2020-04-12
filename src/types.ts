@@ -37,8 +37,9 @@ export interface GridFSFile {
 };
 
 export interface Metadata {
-	ref: Types.ObjectId;
-	uuid: string;
+	ref?: Types.ObjectId;
+	uuid?: string;
+	hash?: string;
 	filename:  string;
 	type: string;
 	owner?: string | null;
@@ -46,19 +47,19 @@ export interface Metadata {
 	downloads?: number;
 	views?: number;
 	bytes: number;
-	uploaded: Date;
+	uploaded?: Date;
 	expires?: Date | null;
 }
 
 export interface MetadataSanitised {
-	id: string;
+	hash?: string;
 	filename:  string;
 	type: string;
 	owner?: string | null;
 	downloads?: number;
 	views?: number;
 	bytes: number;
-	uploaded: Date;
+	uploaded?: Date;
 	expires?: Date | null;
 }
 
