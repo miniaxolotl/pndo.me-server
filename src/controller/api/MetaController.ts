@@ -27,7 +27,8 @@ router.all("/filestats", async (ctx: ParameterizedContext) => {
 			$group: {
 				_id: "file count",
 				bytes: { $sum: "$bytes" },
-				count: { $sum: 1 } 
+				count: { $sum: 1 },
+				last_insert: { $max: "$uploaded" }
 			}
 		}], (err, data) => {
 
@@ -36,7 +37,7 @@ router.all("/filestats", async (ctx: ParameterizedContext) => {
 			size: -1,
 		}
 
-		ctx.body = data;
+		ctx.body = data[0];
 		// ctx.body = stats;
 	}).then(async (e: any) => {
 		// do nothing
@@ -57,7 +58,8 @@ router.all("/userstats", async (ctx: ParameterizedContext) => {
 		}, {
 			$group: {
 				_id: "user count",
-				count: { $sum: 1 } 
+				count: { $sum: 1 },
+				last_insert: { $max: "$created" }
 			}
 		}], (err, data) => {
 
@@ -66,7 +68,7 @@ router.all("/userstats", async (ctx: ParameterizedContext) => {
 			size: -1,
 		}
 
-		ctx.body = data;
+		ctx.body = data[0];
 		// ctx.body = stats;
 	}).then(async (e: any) => {
 		// do nothing
