@@ -134,8 +134,8 @@ router.all("/stream/:id", async (ctx: ParameterizedContext) => {
 			const update_query = {
 				downloads: file_data.downloads ? ++file_data.downloads : 1,
 			}
-			const status = await models['uploads.metadata']
-			.findOneAndUpdate({ hash: ctx.params.id }, update_query);
+			await models['uploads.metadata']
+			.updateOne({ hash: ctx.params.id }, update_query);
 		}	
 
 		{ /* set headers */
@@ -167,8 +167,8 @@ router.all("/download/:id", async (ctx: ParameterizedContext) => {
 		const update_query = {
 			downloads: file_data.downloads ? ++file_data.downloads : 1,
 		}
-		const status = await models['uploads.metadata']
-		.findOneAndUpdate({ hash: ctx.params.id }, update_query);
+		await models['uploads.metadata']
+		.updateOne({ hash: ctx.params.id }, update_query);
 	}
 
 	ctx.response.set("content-type", file_data.type);
@@ -199,8 +199,8 @@ router.all("/download/:id/:filename", async (ctx: ParameterizedContext) => {
 		const update_query = {
 			downloads: file_data.downloads ? ++file_data.downloads : 1,
 		}
-		const status = await models['uploads.metadata']
-		.findOneAndUpdate({ hash: ctx.params.id }, update_query);
+		await models['uploads.metadata']
+		.updateOne({ hash: ctx.params.id }, update_query);
 	}
 
 	ctx.response.set("content-type", file_data.type);
@@ -225,8 +225,8 @@ router.all("/info/:id", async (ctx: ParameterizedContext) => {
 		const update_query = {
 			views: file_data.views ? ++file_data.views : 1,
 		}
-		const status = await models['uploads.metadata']
-		.findOneAndUpdate({ hash: ctx.params.id }, update_query);
+		await models['uploads.metadata']
+		.updateOne({ hash: ctx.params.id }, update_query);
 	}
 
 	const responce: MetadataSanitised = {
@@ -237,6 +237,7 @@ router.all("/info/:id", async (ctx: ParameterizedContext) => {
 		downloads: file_data.downloads,
 		views: file_data.views,
 		bytes: file_data.bytes,
+		uploaded: file_data.uploaded,
 		expires: file_data.expires,
 	};
 
