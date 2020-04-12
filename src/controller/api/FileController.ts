@@ -31,42 +31,33 @@ router.post("/upload", async (ctx: ParameterizedContext) => {
 	const req = ctx.request.body;
 	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 
-	const file: any = (ctx.request as any).files.file;
+	const file: any = (ctx.request as any).files.upload_file;
 	if(!req || !file) { ctx.throw(invalidBody.status, invalidBody); }
 
 	const file_hash = crypto.randomBytes(8).toString('hex');
-	let metadata_store: any;
 
 	const tmp_path = file.path;
 	const file_path = path.join(config.file_path, file_hash);
 
-	const file_data = await new Promise<Metadata | null>((resolve, reject) => {
+	const file_data = await new Promise<Metadata>((resolve, reject) => {
 		fs.rename(tmp_path, file_path, async (err) => {
-			if(err) {
-				reject(err);
-			} else {
-				console.log(file);
-				
-				const file_data: Metadata = {
-					hash: file_hash,
-					filename: file.name,
-					type: file.type,
-					bytes: file.size,
-				};
+			if(err) { reject(); }
 
-				metadata_store = new models['uploads.metadata'](file_data);
-				
-				await metadata_store.save().then(async (e: any) => {
-					// do nothing
-				}).catch(() => {
-					resolve(null);
-				});
-				resolve(file_data);
-			}
+			const file_data: Metadata = {
+				hash: file_hash,
+				filename: file.name,
+				type: file.type,
+				bytes: file.size,
+			};
+
+			const metadata_store = new models['uploads.metadata'](file_data);
+			await metadata_store.save().catch(() => { reject(); });
+
+			resolve(file_data);
 		});
+	}).catch(() => {
+		ctx.throw(serverError.status, serverError);
 	});
-
-	if(!file_data) { ctx.throw(serverError.status, serverError); }
 
 	ctx.body = file_data;
 });

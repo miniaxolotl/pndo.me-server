@@ -79,7 +79,7 @@ app.use(cors({
 app.use(json({ pretty: false, param: 'pretty' }));
 
 app.use(Body({
-	formidable: { maxFileSize: 2**10, uploadDir: config.tmp_path },
+	formidable: { maxFileSize: 2**32, uploadDir: config.tmp_path },
     multipart: true,
 	urlencoded: true,
 }));
