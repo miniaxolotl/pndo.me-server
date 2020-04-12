@@ -22,6 +22,16 @@ export const unauthorizedAccess: StatusMessage = {
 	message: "Unauthorized access.",
 };
 
+export const resourceNotFound: StatusMessage = {
+	status: 404,
+	message: "Resource does not exist.",
+};
+
+export const resourceDeleted: StatusMessage = {
+	status: 200,
+	message: "Resource successfully deleted.",
+};
+
 export const invalidCredentials: StatusMessage = {
 	status: 401,
 	message: "Invalid credentials.",

@@ -13,10 +13,12 @@
 	},
 	"dependencies": {
 		"@koa/cors": "^3.0.0",
+		"@types/formidable": "^1.0.31",
 		"@types/gridfs-stream": "^0.5.32",
 		"@types/koa-better-body": "^3.1.2",
 		"@types/node": "^13.11.1",
 		"bcrypt": "^3.0.8",
+		"formidable": "^1.2.2",
 		"gridfs-stream": "^1.1.1",
 		"jsonwebtoken": "^8.5.1",
 		"koa": "^2.11.0",

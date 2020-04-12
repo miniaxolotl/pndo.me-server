@@ -10,10 +10,13 @@
 import Koa, { ParameterizedContext } from 'koa';
 import cors from '@koa/cors';
 import Router from 'koa-router';
-import BodyParser from 'koa-bodyparser';
+// import BodyParser from 'koa-bodyparser';
 import BetterBody from 'koa-better-body';
+import Body from 'koa-body';
 import json from 'koa-json'
 import session from 'koa-session'
+
+import formidable from 'formidable';
 
 import mongoose from 'mongoose';
 import gridfs from 'gridfs-stream';
@@ -74,11 +77,21 @@ const checkOriginAgainstWhitelist = (ctx: Koa.DefaultContext): string => {
  * middleware
  *****************************/
 
+const inc = {
+	maxFileSize: 2097725440,
+};
+
 app.use(json({ pretty: false, param: 'pretty' }))
-// app.use(BodyParser({ enableTypes: ['json', 'form', 'text']}));
-app.use(BetterBody());
+// app.use(BetterBody({ IncomingForm: { maxFileSize: 2**32, } }));
+
+app.use(Body({
+	formidable: { maxFileSize: 2**32, uploadDir: './data/files', keepExtensions: true },
+    multipart: true,
+	urlencoded: true,
+}));
+
 app.use(cors({
-	origin: checkOriginAgainstWhitelist,
+	// origin: checkOriginAgainstWhitelist,
 	credentials: true,
 	allowMethods: [ 'post', 'get', 'put', 'delete' ],
 }));
@@ -110,6 +123,7 @@ app.use(session(CONFIG, app));
 	{ /* api */
 		router.use("/api/user", api.UserController.routes());
 		router.use("/api/file", api.FileController.routes());
+		router.use("/api/meta", api.MetaController.routes());
 	}
 	// router.use("/api", Controller.Api);
 

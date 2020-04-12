@@ -41,13 +41,30 @@ export interface Metadata {
 	uuid: string;
 	filename:  string;
 	type: string;
-	owner?: string;
+	owner?: string | null;
 	protected?: boolean;
 	downloads?: number;
 	views?: number;
 	bytes: number;
 	uploaded: Date;
 	expires?: Date | null;
+}
+
+export interface MetadataSanitised {
+	id: string;
+	filename:  string;
+	type: string;
+	owner?: string | null;
+	downloads?: number;
+	views?: number;
+	bytes: number;
+	uploaded: Date;
+	expires?: Date | null;
+}
+
+export interface MetaFile {
+	count: number,
+	size: number,
 }
 
 /** Timestamped JWT payload */

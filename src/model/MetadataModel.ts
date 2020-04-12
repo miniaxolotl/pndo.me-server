@@ -34,7 +34,6 @@ const MetadataModel = new Schema({
 	},
 	owner: {
 		type: String,
-		default: null,
 		trim: true,
 	},
 	protected: {
