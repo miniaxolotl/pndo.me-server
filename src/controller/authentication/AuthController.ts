@@ -88,34 +88,31 @@ router.post("/register", async (ctx: ParameterizedContext) => {
 		const password_hash: string | null
 			= await bcrypt.gen_hash(req.password);
 		
-		if(!profile_hash) {
-			/* validate password hash */
-			ctx.throw(serverError.status, serverError);
-		} else {
-			/* add user to database */
-			const user_data: UserData = {
-				profile: profile_hash,
-				username: req.username,
-				password: password_hash
-			};
-			
-			const user = new models.User(user_data);
-			
-			await user.save().then(async (e: any) => {
-				const payload: UserPayload = {
-					profile: user.profile,
-					username: user.username,
-				};
-				const token = TimedJWT.sign(payload, config.crypt.secret);
-				const responce: AuthenticationResponce = {
-					user: payload,
-					authorization: token,
-				};
-				ctx.body = responce;
-			}).catch(() => {
-				ctx.throw(duplicateUsername.status, duplicateUsername);
-			});
-		}
+		if(!profile_hash) { ctx.throw(serverError.status, serverError); }
+
+		const user_data: UserData = {
+			profile: profile_hash,
+			username: req.username,
+			password: password_hash
+		};
+		
+		const user_store = new models.User(user_data);
+		
+		await user_store.save().catch(() => {
+			ctx.throw(duplicateUsername.status, duplicateUsername);
+		});
+		
+		const payload: UserPayload = {
+			profile: user_store.profile,
+			username: user_store.username,
+		};
+		const token = TimedJWT.sign(payload, config.crypt.secret);
+		const responce: AuthenticationResponce = {
+			user: payload,
+			authorization: token,
+		};
+
+		ctx.body = responce;
 	}
 });
 
