@@ -33,43 +33,42 @@ router.post("/login", async (ctx: ParameterizedContext) => {
 
 	if(!req) { ctx.throw(invalidBody.status, invalidBody); }
 
-	let user: any = null;
-
 	if(!req.username || !req.password) {
 		/* validate username/password */
 		ctx.throw(invalidForm.status, invalidForm);
 	}  else {
 		/* find user in database */
-		await models.User.findOne({ username: req.username }, async (err, res) => {
-			if(res === null) {
-				// do nothing
-			} else {
-				user = res;
-			}
+		const user: UserData
+			= await new Promise<UserData>(async (res, rej) => {
+
+			await models.User.findOne({ username: req.username },
+				async (err, data) => {
+
+				if(res === null) {
+					rej();
+				} else {
+					res(data);
+				}
+			});
+		}).catch(() => {
+			ctx.throw(invalidCredentials.status, invalidCredentials);
 		});
 
-		if(user === null) {
-			/* validate user */
-			ctx.throw(invalidCredentials.status, invalidCredentials);
-		} else {
-			/* create token */
-			if(await bcrypt.compare(req.password, user.password)) {
-				const payload: UserPayload = {
-					username: user.username,
-					profile: user.profile
-				};
-				const token = TimedJWT.sign(payload, config.crypt.secret);
-				const responce: AuthenticationResponce = {
-					user: payload,
-					authorization: token,
-				};
+		/* create jwt */
+		if(await bcrypt.compare(req.password, user.password)) {
+			const payload: UserPayload = {
+				username: user.username,
+				profile: user.profile
+			};
+			const token = TimedJWT.sign(payload, config.crypt.secret);
+			const responce: AuthenticationResponce = {
+				user: payload,
+				authorization: token,
+			};
 
-				ctx.body = responce;
-			}
-			else
-			{
-				ctx.throw(invalidCredentials.status, invalidCredentials);
-			}
+			ctx.body = responce;
+		} else {
+			ctx.throw(invalidCredentials.status, invalidCredentials);
 		}
 	}
 });
