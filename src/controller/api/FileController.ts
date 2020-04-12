@@ -15,7 +15,7 @@ import fs, { createReadStream, stat } from "fs";
 import crypto from "crypto";
 import path from "path";
 
-import { ResgisterRequest, Metadata, MetadataSanitised } from "types";
+import { ResgisterRequest, Metadata, MetadataSanitised, UploadRequest } from "types";
 import { invalidBody, serverError,
 	resourceNotFound, resourceDeleted } from "../../util/errors";
 
@@ -28,7 +28,7 @@ import config from "../../../res/config.json";
 const router: Router = new Router();
 
 router.post("/upload", async (ctx: ParameterizedContext) => {
-	const req = ctx.request.body;
+	const req: UploadRequest = ctx.request.body;
 	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 	
 	if(!req
@@ -52,8 +52,15 @@ router.post("/upload", async (ctx: ParameterizedContext) => {
 				filename: file.name,
 				type: file.type,
 				bytes: file.size,
+				owner: ctx.auth.user
+					? ctx.auth.user : null,
+				protected: req.protected && ctx.auth.user 
+					? req.protected : false,
+				hidden: (req.protected == true && ctx.auth.user)
+					|| !req.hidden || req.hidden == 'true' || req.hidden == true
+					? true : false,
 			};
-
+			
 			const metadata_store = new models['uploads.metadata'](file_data);
 			await metadata_store.save().catch(() => { reject(); });
 
@@ -234,6 +241,8 @@ router.all("/info/:id", async (ctx: ParameterizedContext) => {
 		filename: file_data.filename,
 		type: file_data.type,
 		owner: file_data.owner ? file_data.owner : null,
+		protected: file_data.protected,
+		hidden: file_data.hidden,
 		downloads: file_data.downloads,
 		views: file_data.views,
 		bytes: file_data.bytes,

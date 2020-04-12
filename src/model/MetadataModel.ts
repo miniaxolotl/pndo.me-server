@@ -35,6 +35,11 @@ const MetadataModel = new Schema({
 		default: false,
 		trim: true,
 	},
+	hidden: {
+		type: Boolean,
+		default: true,
+		trim: true,
+	},
 	downloads: {
 		type: Number,
 		default: 0,
