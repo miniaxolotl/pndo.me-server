@@ -11,7 +11,7 @@ import { ParameterizedContext } from "koa";
 import Router from 'koa-router';
 import mongoose, { Model, Mongoose } from 'mongoose';
 
-import fs, { createReadStream } from "fs";
+import fs, { createReadStream, stat } from "fs";
 import crypto from "crypto";
 import path from "path";
 
@@ -94,36 +94,60 @@ router.all("/stream/:id", async (ctx: ParameterizedContext) => {
 
 	const file_path = path.join(config.file_path, ctx.params.id);
 
-	const stat = fs.statSync(file_path);
-	const fileSize = stat.size
-	const range = ctx.headers.range
-	if (range) {
+	const file_data: Metadata = await models['uploads.metadata']
+	.findOne({ hash: ctx.params.id });
+	if(!file_data) { ctx.throw(resourceNotFound.status, resourceNotFound); }
+	
+	try {
+		/* check if file exists on filesystem */
+		fs.statSync(file_path);
+	} catch(err) {
+		ctx.throw(resourceNotFound.status, resourceNotFound);
+	}
+
+	const range = ctx.headers.range;
+
+	if(range) {
 		const parts = range.replace(/bytes=/, "").split("-");
 		const start = parseInt(parts[0], 10);
-		const end = parts[1]
-		? parseInt(parts[1], 10)
-		: fileSize-1;
-		const chunksize = (end-start)+1;
-		const file = fs.createReadStream(file_path, {start, end});
-		ctx.response.set("content-type", 'video/webm');
-		ctx.response.set("content-length", chunksize.toString());
-		ctx.response.set("accept-ranges", "bytes");
-		ctx.response.set("content-range", `bytes ${start}-${end}/${fileSize}`);
-		ctx.response.set("connection", "keep-alive");
-		ctx.response.set("content-disposition",
-			"inline; filename=hello.mkv");
+		const end = parts[1] ? parseInt(parts[1], 10) : file_data.bytes - 1;
+		const chunk_size = (end-start) + 1;
+
+		const file_stream = fs.createReadStream(file_path, {start, end});
 		
+		{ /* set headers */
+			ctx.response.set("connection", "keep-alive");
+			ctx.response.set("content-type", file_data.type);
+			ctx.response.set("content-length", chunk_size.toString());
+			ctx.response.set("accept-ranges", "bytes");
+			ctx.response.set("content-range",
+				`bytes ${start}-${end}/${file_data.bytes}`);
+			ctx.response.set("connection", "keep-alive");
+			ctx.response.set("content-disposition",
+				"inline; filename="+file_data.filename);
+		}
+
 		ctx.status = 206;
-		ctx.body = file;
+		ctx.body = file_stream;
 	} else {
-		ctx.response.set("content-length", fileSize.toString());
-		ctx.response.set("content-type", 'video/webm');
-		ctx.response.set("content-disposition",
-			"inline; filename=hello.mkv");
+		{ /* update stats */
+			const update_query = {
+				downloads: file_data.downloads ? ++file_data.downloads : 1,
+			}
+			const status = await models['uploads.metadata']
+			.findOneAndUpdate({ hash: ctx.params.id }, update_query);
+		}	
+
+		{ /* set headers */
+			ctx.response.set("connection", "keep-alive");
+			ctx.response.set("content-length", file_data.bytes.toString());
+			ctx.response.set("content-type", file_data.type);
+			ctx.response.set("content-disposition",
+				"inline; filename="+file_data.filename);
+		}
 		
 		ctx.status = 200;
-		ctx.body = fs.createReadStream(file_path)
-		.on('error', () => { console.log('hello') });
+		ctx.body = fs.createReadStream(file_path);
 	}
 });
 
@@ -134,12 +158,18 @@ router.all("/download/:id", async (ctx: ParameterizedContext) => {
 	const file_path = path.join(config.file_path, ctx.params.id);
 
 	const file_data: Metadata = await models['uploads.metadata']
-	.findOne({ hash: ctx.params.id })
-	.catch(() => {
-		ctx.throw(resourceNotFound.status, resourceNotFound);
-	});
+	.findOne({ hash: ctx.params.id });
+	if(!file_data) { ctx.throw(resourceNotFound.status, resourceNotFound); }
 
-	const readStream = fs.createReadStream(file_path);
+	const file_stream = fs.createReadStream(file_path);
+
+	{ /* update stats */
+		const update_query = {
+			downloads: file_data.downloads ? ++file_data.downloads : 1,
+		}
+		const status = await models['uploads.metadata']
+		.findOneAndUpdate({ hash: ctx.params.id }, update_query);
+	}
 
 	ctx.response.set("content-type", file_data.type);
 	ctx.response.set("content-length", file_data.bytes.toString());
@@ -148,7 +178,7 @@ router.all("/download/:id", async (ctx: ParameterizedContext) => {
 	ctx.response.set("content-disposition",
 		"inline; filename="+file_data.filename);
 
-	ctx.body = readStream;
+	ctx.body = file_stream;
 });
 
 router.all("/download/:id/:filename", async (ctx: ParameterizedContext) => {
@@ -164,6 +194,14 @@ router.all("/download/:id/:filename", async (ctx: ParameterizedContext) => {
 	});
 
 	const readStream = fs.createReadStream(file_path);
+
+	{ /* update stats */
+		const update_query = {
+			downloads: file_data.downloads ? ++file_data.downloads : 1,
+		}
+		const status = await models['uploads.metadata']
+		.findOneAndUpdate({ hash: ctx.params.id }, update_query);
+	}
 
 	ctx.response.set("content-type", file_data.type);
 	ctx.response.set("content-length", file_data.bytes.toString());
@@ -182,6 +220,14 @@ router.all("/info/:id", async (ctx: ParameterizedContext) => {
 	const file_data: Metadata = await models['uploads.metadata']
 	.findOne({ hash: ctx.params.id });
 	if(!file_data) { ctx.throw(resourceNotFound.status, resourceNotFound); }
+
+	{ /* update stats */
+		const update_query = {
+			views: file_data.views ? ++file_data.views : 1,
+		}
+		const status = await models['uploads.metadata']
+		.findOneAndUpdate({ hash: ctx.params.id }, update_query);
+	}
 
 	const responce: MetadataSanitised = {
 		hash: file_data.hash,
