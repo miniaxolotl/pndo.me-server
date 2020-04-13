@@ -12,12 +12,13 @@ import Router from 'koa-router';
 import mongoose, { Model, Mongoose } from 'mongoose';
 
 import fs, { createReadStream, stat } from "fs";
+import http from "http";
 import crypto from "crypto";
 import path from "path";
 
 import { ResgisterRequest, Metadata, MetadataSanitised, UploadRequest } from "types";
 import { invalidBody, serverError,
-	resourceNotFound, resourceDeleted } from "../../util/errors";
+	resourceNotFound, resourceDeleted, invalidRequest } from "../../util/errors";
 
 import config from "../../../res/config.json";
 import { VerifyFileAuthentication, VerifyIdentity } from "../../middleware";
@@ -72,6 +73,71 @@ router.post("/upload", VerifyIdentity, async (ctx: ParameterizedContext) => {
 	});
 
 	ctx.body = file_data;
+});
+
+router.post("/upload/url", VerifyIdentity,
+	async (ctx: ParameterizedContext) => {
+
+	const req: any = ctx.request.body;
+	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
+	
+	if(!req || !req.resource_url)
+	{ ctx.throw(invalidBody.status, invalidBody); }
+
+	const resource: any = req.resource_url;
+	const file_hash = crypto.randomBytes(8).toString('hex');
+	const file_path = path.join(config.file_path, file_hash)
+
+	
+	var file = fs.createWriteStream(file_path);
+
+	const file_data = await new Promise<any>((res, rej) => {
+		http.get(resource, (data) => {
+			if(data.statusCode == 200) {
+				const file_type = data.headers["content-type"];
+				const file_size = data.headers["content-length"];
+				const file_name = data.headers["content-disposition"]
+				?.split(';')[1]
+				.split('"')[1];
+				
+				if(file_type && file_name && file_size) {
+					data.pipe(file);
+					file.on('finish', () => {
+						file.close();
+						res({ file_type, file_name, file_size });
+					});
+				} else {
+					res(null);
+				}
+			} else {
+				res(null);
+			}
+		});
+	});
+
+	if(file_data) {
+		const file_metadata: Metadata = {
+			hash: file_hash,
+			filename: file_data.file_name,
+			type: file_data.file_type,
+			bytes: file_data.file_size,
+			owner: ctx.auth.user
+			? ctx.auth.user : null,
+			protected: req.protected && ctx.auth.user 
+			? req.protected : false,
+			hidden: (req.protected == true && ctx.auth.user)
+			|| !req.hidden || req.hidden == 'true' || req.hidden == true
+			? true : false,
+		};
+		
+		const metadata_store = new models['uploads.metadata'](file_metadata);
+		await metadata_store.save().catch();
+
+		ctx.body = file_data;
+	} else {
+		ctx.status = invalidRequest.status;
+		ctx.body = invalidRequest;
+	}
 });
 
 router.post("/delete/:id", VerifyFileAuthentication,
@@ -136,7 +202,7 @@ router.all("/stream/:id", VerifyFileAuthentication,
 				`bytes ${start}-${end}/${file_data.bytes}`);
 			ctx.response.set("connection", "keep-alive");
 			ctx.response.set("content-disposition",
-				"inline; filename="+file_data.filename);
+				"inline; filename=\""+file_data.filename+'"');
 		}
 
 		ctx.status = 206;
@@ -155,7 +221,7 @@ router.all("/stream/:id", VerifyFileAuthentication,
 			ctx.response.set("content-length", file_data.bytes.toString());
 			ctx.response.set("content-type", file_data.type);
 			ctx.response.set("content-disposition",
-				"inline; filename="+file_data.filename);
+				"inline; filename=\""+file_data.filename+'"');
 		}
 		
 		ctx.status = 200;
@@ -190,7 +256,7 @@ router.all("/download/:id", VerifyFileAuthentication,
 	ctx.response.set("accept-ranges", "bytes");
 	ctx.response.set("connection", "keep-alive");
 	ctx.response.set("content-disposition",
-		"inline; filename="+file_data.filename);
+		"inline; filename=\""+file_data.filename+'"');
 
 	ctx.body = file_stream;
 });
@@ -224,7 +290,7 @@ router.all("/download/:id/:filename", VerifyFileAuthentication,
 	ctx.response.set("accept-ranges", "bytes");
 	ctx.response.set("connection", "keep-alive");
 	ctx.response.set("content-disposition",
-		"inline; filename="+file_data.filename);
+		"inline; filename="+file_data.filename+'"');
 
 	ctx.body = readStream;
 });
