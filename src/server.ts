@@ -23,13 +23,16 @@ import { JWTAuthenticate } from './middleware';
 import { UserModel, MetadataModel } from "./model"
 
 import config from "../res/config.json";
+import { system_usage } from './util/sys-util';
 
 /************************************************
  * ANCHOR setup
  ************************************************/
 
-const app: Koa = new Koa();
-websocket(app); //! enables websockets
+const koaApp: Koa = new Koa();
+
+const wsOptions = {};
+const app = websocket(koaApp, wsOptions); //! enables websockets
 
 const router: Router = new Router();
 const socket_router = new Router();
@@ -126,31 +129,44 @@ app.use(session(CONFIG, app));
 		router.use("/comment/:id", api.CommentController.routes());
 	}
 
-	router.get('/hello', async (ctx: ParameterizedContext) => {
-		// ignore favicon
-		if (ctx.path === '/favicon.ico') return;
-
-		let n = ctx.session.views || 0;
-		ctx.session.views = ++n;
-		ctx.body = n + ' views';
-		ctx.body = 'Hello World!';
-	});
-
 	app.use(router.routes());
 }
 
 { /* WEBSOCKET */
-	socket_router.get('/socket', async (ctx: any) => {
-		ctx.websocket.send('Hey!');
+	// socket_router.use('/socket/mseta', async (ctx: ParameterizedContext) => {
+	// 	ctx.websocket.on('message', function (message) {
+	// 		// while(true) {
+	// 			ctx.websocket.send("system_usage()");
+	// 		// }
+	// 	});
+	// });
 
-		ctx.websocket.on('message', function (message) {
-			console.log(message);
+	function sleep(ms) {
+		return new Promise((resolve) => {
+		  setTimeout(resolve, ms);
 		});
+	  }   
 
-		console.log(ctx);
-	});
+	{
+		socket_router.all('/meta/usage', async (ctx: any) => {
 
-	app.use(socket_router.routes()).use(socket_router.allowedMethods());
+			while(true) { 
+				const usage_data = await system_usage();
+				const payload = {
+					memory_usage: usage_data.memory_usage,
+					cpu_usage: usage_data.cpu_usage,
+					disk_usage: usage_data.disk_usage,
+				};
+
+				ctx.websocket.send(JSON.stringify(payload));
+				
+				  await sleep(1000);
+			}
+
+		});
+	}
+
+	app.ws.use(socket_router.routes());
 }
 
 /************************************************
