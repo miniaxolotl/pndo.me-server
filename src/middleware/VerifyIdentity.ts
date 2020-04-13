@@ -16,6 +16,9 @@ import mongoose from "mongoose";
 
 const secret = config.crypt.secret;
 
+/**
+ * Validates authorization token and user.
+ */
 export default async (ctx: any, next: any): Promise<void> => {
 	const authentication = (ctx.headers.authorization);
 
@@ -33,8 +36,7 @@ export default async (ctx: any, next: any): Promise<void> => {
 				.findOne({ username: payload.username });
 
 				if(user == null) {
-					ctx.status = unauthorizedAccess.status;
-					ctx.body = unauthorizedAccess;
+					await next();
 				} else {
 					ctx.auth.user = payload.username;
 					ctx.auth.profile = payload.profile;
@@ -43,15 +45,12 @@ export default async (ctx: any, next: any): Promise<void> => {
 					await next();
 				}
 			} else {
-				ctx.status = unauthorizedAccess.status;
-				ctx.body = unauthorizedAccess;
+				await next();
 			}
 		} catch(err) {
-			ctx.status = unauthorizedAccess.status;
-			ctx.body = unauthorizedAccess;
+			await next();
 		}
 	} else {
-		ctx.status = unauthorizedAccess.status;
-		ctx.body = unauthorizedAccess;
+		await next();
 	}
 };

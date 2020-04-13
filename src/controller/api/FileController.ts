@@ -20,6 +20,7 @@ import { invalidBody, serverError,
 	resourceNotFound, resourceDeleted } from "../../util/errors";
 
 import config from "../../../res/config.json";
+import { VerifyFileAuthentication, VerifyIdentity } from "../../middleware";
 
 /************************************************
  * ANCHOR routes
@@ -27,7 +28,7 @@ import config from "../../../res/config.json";
 
 const router: Router = new Router();
 
-router.post("/upload", async (ctx: ParameterizedContext) => {
+router.post("/upload", VerifyIdentity, async (ctx: ParameterizedContext) => {
 	const req: UploadRequest = ctx.request.body;
 	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 	
@@ -73,7 +74,9 @@ router.post("/upload", async (ctx: ParameterizedContext) => {
 	ctx.body = file_data;
 });
 
-router.post("/delete/:id", async (ctx: ParameterizedContext) => {
+router.post("/delete/:id", VerifyFileAuthentication,
+	async (ctx: ParameterizedContext) => {
+
 	const req = ctx.request.body;
 	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 
@@ -95,7 +98,9 @@ router.post("/delete/:id", async (ctx: ParameterizedContext) => {
 	ctx.body = resourceDeleted;
 });
 
-router.all("/stream/:id", async (ctx: ParameterizedContext) => {
+router.all("/stream/:id", VerifyFileAuthentication,
+	async (ctx: ParameterizedContext) => {
+
 	const req = ctx.request.body;
 	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 
@@ -158,7 +163,9 @@ router.all("/stream/:id", async (ctx: ParameterizedContext) => {
 	}
 });
 
-router.all("/download/:id", async (ctx: ParameterizedContext) => {
+router.all("/download/:id", VerifyFileAuthentication,
+	async (ctx: ParameterizedContext) => {
+
 	const req = ctx.request.body;
 	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 
@@ -188,7 +195,9 @@ router.all("/download/:id", async (ctx: ParameterizedContext) => {
 	ctx.body = file_stream;
 });
 
-router.all("/download/:id/:filename", async (ctx: ParameterizedContext) => {
+router.all("/download/:id/:filename", VerifyFileAuthentication,
+	async (ctx: ParameterizedContext) => {
+
 	const req = ctx.request.body;
 	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 
@@ -220,7 +229,9 @@ router.all("/download/:id/:filename", async (ctx: ParameterizedContext) => {
 	ctx.body = readStream;
 });
 
-router.all("/info/:id", async (ctx: ParameterizedContext) => {
+router.all("/info/:id", VerifyFileAuthentication,
+	 async (ctx: ParameterizedContext) => {
+
 	const req = ctx.request.body;
 	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 

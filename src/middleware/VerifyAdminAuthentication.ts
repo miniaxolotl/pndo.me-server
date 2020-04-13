@@ -9,8 +9,10 @@
 
 import config from "../../res/config.json";
 import { TimedJWT } from "../util";
-import { unauthorizedAccess } from "util/errors";
-import { UserPayload } from "types";
+import { unauthorizedAccess } from "../util/errors";
+import { UserPayload, UserData } from "types";
+
+import mongoose from "mongoose";
 
 const secret = config.crypt.secret;
 
@@ -18,33 +20,46 @@ const secret = config.crypt.secret;
  * Validates authorization token and user.
  */
 export default async (ctx: any, next: any): Promise<void> => {
-	const token = ctx.headers.authorization;
-	const db = ctx.db;
+	const authentication = (ctx.headers.authorization);
 
-	if(token == null) {
-		ctx.throw(unauthorizedAccess.status, unauthorizedAccess);
-	} else {
+	if(authentication) {
+		const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
+		const token = authentication.split(' ')[1];
+
 		try {
 			const authorization = TimedJWT.verify(token, secret);
-			const payload: UserPayload | null =
-				authorization ? authorization.payload : null;
-			let user: any;
 
-			await db.User.findOne({ username: payload?.username },
-				async (err, res) => {
-				user = await res;
-			});
+			if(authorization) {
+				const payload: UserData = authorization.payload;
 
-			if(user == null) {
-				ctx.throw(unauthorizedAccess.status, unauthorizedAccess);
+				let user: UserData = await models.User
+				.findOne({ username: payload.username });
+
+				if(user == null) {
+					ctx.status = unauthorizedAccess.status;
+					ctx.body = unauthorizedAccess;
+				} else {
+					if(user.flags?.admin == true
+					|| user.flags?.moderator == true) {
+						ctx.auth.user = payload.username;
+						ctx.auth.profile = payload.profile;
+						ctx.auth.flags = payload.flags;
+						await next();
+					} else {
+						ctx.status = unauthorizedAccess.status;
+						ctx.body = unauthorizedAccess;
+					}
+				}
 			} else {
-				ctx.request.authorization = authorization;
+				ctx.status = unauthorizedAccess.status;
+				ctx.body = unauthorizedAccess;
 			}
+		} catch(err) {
+			ctx.status = unauthorizedAccess.status;
+			ctx.body = unauthorizedAccess;
 		}
-		catch(err) {
-			ctx.throw(err.status || 403, err.text);
-		}
+	} else {
+		ctx.status = unauthorizedAccess.status;
+		ctx.body = unauthorizedAccess;
 	}
-	
-	await next();
-  };
+};
