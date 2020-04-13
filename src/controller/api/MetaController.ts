@@ -10,16 +10,15 @@
 import { ParameterizedContext } from "koa";
 import Router from 'koa-router';
 import mongoose from "mongoose";
-import { MetaFile } from "types";
+import { noContentToProcess } from "util/errors";
 
 const router: Router = new Router();
 
 router.all("/filestats", async (ctx: ParameterizedContext) => {
-	const req = ctx.request.body;
+	// const req = ctx.request.body;
 	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 
 	const metadata_store = models['uploads.metadata'];
-	let stats: MetaFile;
 
 	await metadata_store.aggregate([{
 			$match: {}
@@ -32,26 +31,19 @@ router.all("/filestats", async (ctx: ParameterizedContext) => {
 			}
 		}], (err, data) => {
 
-		stats = {
-			count: data,
-			size: -1,
+		if(data[0]) { ctx.body = data[0]; }
+		else {
+			ctx.body = noContentToProcess;
+			ctx.status = noContentToProcess.status;
 		}
-
-		ctx.body = data[0];
-		// ctx.body = stats;
-	}).then(async (e: any) => {
-		// do nothing
-	}).catch((e) => {
-	});
-
+	}).catch(() => null);
 });
 
 router.all("/userstats", async (ctx: ParameterizedContext) => {
-	const req = ctx.request.body;
+	// const req = ctx.request.body;
 	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 
 	const user_store = models['User'];
-	let stats: MetaFile;
 
 	await user_store.aggregate([{
 			$match: {}
@@ -63,17 +55,12 @@ router.all("/userstats", async (ctx: ParameterizedContext) => {
 			}
 		}], (err, data) => {
 
-		stats = {
-			count: data,
-			size: -1,
+		if(data[0]) { ctx.body = data[0]; }
+		else {
+			ctx.body = noContentToProcess;
+			ctx.status = noContentToProcess.status;
 		}
-
-		ctx.body = data[0];
-		// ctx.body = stats;
-	}).then(async (e: any) => {
-		// do nothing
-	}).catch((e) => {
-	});
+	}).catch(() => null);
 });
 
 const Controller: Router = router;
