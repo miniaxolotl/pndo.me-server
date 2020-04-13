@@ -21,51 +21,63 @@ const secret = config.crypt.secret;
  * Validates authorization token and user.
  */
 export default async (ctx: ParameterizedContext, next: any): Promise<void> => {
-	const token = (ctx.headers.authorization as string).split(' ')[1];
-	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 	
+	const authentication = (ctx.headers.authorization);
+
+	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 	const file_data: Metadata = await models['uploads.metadata']
 	.findOne({ hash: ctx.params.id });
 
-	if(file_data == null) {
-		ctx.status = resourceNotFound.status;
-		ctx.body = resourceNotFound;
-	} else {
-		if(token == null) {
-			ctx.status = unauthorizedAccess.status;
-			ctx.body = unauthorizedAccess;
+	if(authentication) {
+		const token = authentication.split(' ')[1];
+	
+		if(file_data == null) {
+			ctx.status = resourceNotFound.status;
+			ctx.body = resourceNotFound;
 		} else {
-			try{ 
-				const authorization = TimedJWT.verify(token, secret);
+			if(token == null) {
+				ctx.status = unauthorizedAccess.status;
+				ctx.body = unauthorizedAccess;
+			} else {
+				try{ 
+					const authorization = TimedJWT.verify(token, secret);
 
-				if(authorization) {
-					const payload: UserData = authorization.payload;
-		
-					let user: UserData = await models.User
-					.findOne({ username: payload.username });
+					if(authorization) {
+						const payload: UserData = authorization.payload;
+			
+						let user: UserData = await models.User
+						.findOne({ username: payload.username });
 
-					ctx.auth.user = payload.username;
-					ctx.auth.profile = payload.profile;
-					ctx.auth.flags = payload.flags;
+						ctx.auth.user = payload.username;
+						ctx.auth.profile = payload.profile;
+						ctx.auth.flags = payload.flags;
 
-					if(file_data.protected == true) {
-						if(file_data.owner == user.username) {
-							await next();
+						if(file_data.protected == true) {
+							if(file_data.owner == user.username) {
+								await next();
+							} else {
+								ctx.status = unauthorizedAccess.status;
+								ctx.body = unauthorizedAccess;
+							}
 						} else {
-							ctx.status = unauthorizedAccess.status;
-							ctx.body = unauthorizedAccess;
+							await next();
 						}
 					} else {
-						await next();
+						ctx.status = unauthorizedAccess.status;
+						ctx.body = unauthorizedAccess;
 					}
-				} else {
+				} catch(err) {
 					ctx.status = unauthorizedAccess.status;
 					ctx.body = unauthorizedAccess;
 				}
-			} catch(err) {
-				ctx.status = unauthorizedAccess.status;
-				ctx.body = unauthorizedAccess;
 			}
+		}
+	} else {
+		if(file_data.protected == true) {
+			ctx.status = unauthorizedAccess.status;
+			ctx.body = unauthorizedAccess;
+		} else {
+			await next();
 		}
 	}
 };
