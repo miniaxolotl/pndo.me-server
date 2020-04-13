@@ -18,8 +18,9 @@
 	],
 	"rules": {
 		"camelcase": "off",
-		"@typescript-eslint/camelcase": 0,
-		"@typescript-eslint/member-delimiter-style": 1,
-		"@typescript-eslint/no-explicit-any": 0
+		"@typescript-eslint/camelcase": "off",
+		"@typescript-eslint/member-delimiter-style": "on",
+		"no-async-promise-executor": "off",
+		"@typescript-eslint/no-explicit-any": "off"
 	}
 }
