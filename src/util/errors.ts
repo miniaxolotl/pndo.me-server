@@ -7,10 +7,10 @@
  * Created 20-02-17
  */
 
- export interface StatusMessage {
+export interface StatusMessage {
 	status: number;
 	message: string;
-};
+}
 
 export const invalidBody: StatusMessage = {
 	status: 400 ,
@@ -30,6 +30,11 @@ export const resourceNotFound: StatusMessage = {
 export const resourceDeleted: StatusMessage = {
 	status: 200,
 	message: "Resource successfully deleted.",
+};
+
+export const noContentToProcess: StatusMessage = {
+	status: 204,
+	message: "No content to process.",
 };
 
 export const invalidCredentials: StatusMessage = {

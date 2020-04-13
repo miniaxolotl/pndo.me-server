@@ -7,41 +7,41 @@ export type UserFlags = {
 };
 
 export interface ResgisterRequest {
-	username: string,
-	password: string,
-};
+	username: string;
+	password: string;
+}
 
 export interface UploadRequest {
-	username: string,
-	password: string,
+	username: string;
+	password: string;
 	protected?: boolean;
 	hidden?: boolean | string;
-};
+}
 
 /** Authentication success responce */
 export interface UserPayload {
 	profile: string;
 	username: string;
 	flags: UserFlags;
-};
+}
 
 export interface SanitisedUserPayload {
 	profile: string;
 	username: string;
-};
+}
 
 export interface UserData {
 	profile: string;
 	username: string;
 	password: string;
 	flags?: UserFlags;
-};
+}
 
 /** Authentication success responce */
 export interface AuthenticationResponce {
 	user: SanitisedUserPayload;
 	authorization: string;
-};
+}
 
 export interface Metadata {
 	ref?: Types.ObjectId;
@@ -74,8 +74,8 @@ export interface MetadataSanitised {
 }
 
 export interface MetaFile {
-	count: number,
-	size: number,
+	count: number;
+	size: number;
 }
 
 /** Timestamped JWT payload */
@@ -83,4 +83,4 @@ export interface TimedPayload {
 	payload: any;
 	validUntil: number;
 	createdOn: number;
-};
+}
