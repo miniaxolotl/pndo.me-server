@@ -122,8 +122,8 @@ app.use(session(CONFIG, app));
 	}
 	
 	{ /* conversations / comments */ // TODO
-		// router.use("/conversation/:id", api.UserController.routes());
-		// router.use("/message/:id", api.UserController.routes());
+		router.use("/form/:id", api.FormController.routes());
+		router.use("/comment/:id", api.CommentController.routes());
 	}
 
 	router.get('/hello', async (ctx: ParameterizedContext) => {

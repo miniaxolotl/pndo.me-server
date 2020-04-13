@@ -271,13 +271,15 @@ router.all("/search",
 	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 
 	const limit = req.limit ? parseInt(req.limit) : 15;
-	const page = parseInt(req.page);
-	
-	console.log(req.search_key.split(' ').join('|'));
-	
+	const page = req.page ? parseInt(req.page) : parseInt(ctx.query.page);
+	const search_key = req.search_key
+		? req.search_key.split(' ').join('|')
+		: ctx.query.search_key ? ctx.query.search_key : '';
+
 	const query = {
 		"filename" : {
-			$regex: `.*(${req.search_key.split(' ').join('|')}).*`
+			$regex: `.*(${search_key}).*`,
+			$options: 'i',
 		},
 		owner: req.owner,
 		protected: false,
