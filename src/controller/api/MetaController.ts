@@ -18,10 +18,10 @@ router.all("/filestats", async (ctx: ParameterizedContext) => {
 	// const req = ctx.request.body;
 	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 
-	const user_store = models['uploads.metadata'];
+	const file_store = models['uploads.metadata'];
 
 	const query_data = await new Promise<any>(async (res) => {
-		user_store.aggregate([{
+		file_store.aggregate([{
 				$match: {}
 			}, {
 				$group: {

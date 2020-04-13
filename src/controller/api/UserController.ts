@@ -10,67 +10,64 @@
 import { ParameterizedContext } from "koa";
 import Router from 'koa-router';
 import mongoose from "mongoose";
+import { SanitisedUserPayload } from "types";
+import { resourceNotFound, noContentToProcess, invalidRequest } from "../../util/errors";
 
 const router: Router = new Router();
 
-/*************************** route: /:all ***************************/
-
-router.get("/all", async (ctx: ParameterizedContext) => {
-	const req = ctx.request.body;
-	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
-
-	const limit = req.limit ? parseInt(req.limit) : 25;
-	const page = Math.abs(req.page ? req.page : 0);
-
-	await models.User.find({},
-		{ password: 0, _id: 0, __v: 0 })
-	.limit(limit)
-	.skip(page * limit)
-	.then((res: any[]) => {
-		ctx.body = res;
-	});
-});
-
 /*************************** route: /:user ***************************/
 
-router.get("/", async (ctx: ParameterizedContext) => {
+router.all("/:id/files", async (ctx: ParameterizedContext) => {
 	const req = ctx.request.body;
 	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 
-	const query: any = {};
-	if(req.email) { query.email = req.email; }
-	if(req.profile) { query.profile = req.profile; }
+	const limit = parseInt(req.limit);
+	const page = parseInt(req.page);
 
-	await  models.User.findOne(query,
-		{ password: 0, _id: 0, __v: 0 }).then((res: any[]) => {
-		ctx.body = res;
-	});
+	if((limit < 0) || (page < 0)) {
+		ctx.status = invalidRequest.status;
+		ctx.body = invalidRequest;
+	} else {
+		if(ctx.params.id) {
+			const file_store = models['uploads.metadata'];
+			const query_data = await new Promise<any>(async (res) => {
+				const file_list = await file_store
+				.find({ owner: ctx.auth.user }, { _id: 0, __v: 0 })
+				.limit(limit)
+				.skip((page -1) * limit)
+				.catch(() => {
+					res();
+				});
+				
+				res(file_list);
+			});
+			
+			if(query_data) {
+				ctx.body = query_data;
+			} else {
+				ctx.status = noContentToProcess.status;
+				ctx.body = noContentToProcess;
+			}
+		}
+	}
 });
 
-router.put("/", async (ctx: ParameterizedContext) => {
+router.all("/:id", async (ctx: ParameterizedContext) => {
 	const req = ctx.request.body;
 	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 
-	const query: any = {};
-	if(req.email) { query.email = req.email; }
-	if(req.profile) { query.profile = req.profile; }
+	if(ctx.params.id) {
+		const query: any = { profile: ctx.auth.profile };
+		const filter: any =  { password: 0, _id: 0, __v: 0, flags: 0 };
+	
+		const user_data: SanitisedUserPayload
+			= await models.User.findOne(query, filter);
 
-	await  models.User.updateOne(query, req).then((res: any[]) => {
-		ctx.body = res;
-	});
-});
-
-router.del("/", async (ctx: ParameterizedContext) => {
-	const req = ctx.request.body;
-	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
-
-	const query: any = {};
-	if(req.email) { query.email = req.email; }
-	if(req.profile) { query.profile = req.profile; }
-
-	await  models.User.deleteOne(query).then((res: any) => {
-		ctx.body = res;
-	});
+		ctx.body = user_data;
+	} else {
+		ctx.status = resourceNotFound.status;
+		ctx.body = resourceNotFound;
+	}
 });
 
 const Controller: Router = router;

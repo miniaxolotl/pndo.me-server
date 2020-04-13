@@ -112,11 +112,19 @@ app.use(session(CONFIG, app));
 { /* HTTP */
 	router.use("/auth", authentication.AuthController.routes());
 	{ /* api */
-		router.use("/api/user", api.UserController.routes());
+		router.use("/api/user", JWTAuthenticate, api.UserController.routes());
 		router.use("/api/file", api.FileController.routes());
 		router.use("/api/meta", api.MetaController.routes());
 	}
-	// router.use("/api", Controller.Api);
+
+	{ /* admin */ // TODO
+		// router.use("/admin/user", api.UserController.routes());
+	}
+	
+	{ /* conversations / comments */ // TODO
+		// router.use("/conversation/:id", api.UserController.routes());
+		// router.use("/message/:id", api.UserController.routes());
+	}
 
 	router.get('/hello', async (ctx: ParameterizedContext) => {
 		// ignore favicon

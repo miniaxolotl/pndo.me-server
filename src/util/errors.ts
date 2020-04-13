@@ -52,6 +52,11 @@ export const invalidForm: StatusMessage = {
 	message: "Required form field was null.",
 };
 
+export const invalidRequest: StatusMessage = {
+	status: 400,
+	message: "Requst data was invalid.",
+};
+
 export const serverError: StatusMessage = {
 	status: 500,
 	message: "Unspecified server error.",

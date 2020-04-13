@@ -28,6 +28,7 @@ export interface UserPayload {
 export interface SanitisedUserPayload {
 	profile: string;
 	username: string;
+	creaated?: Date;
 }
 
 export interface UserData {

@@ -36,21 +36,20 @@ export default async (ctx: any, next: any): Promise<void> => {
 				.findOne({ username: payload.username });
 
 				if(user == null) {
-					await next();
+					// do nothing
 				} else {
 					ctx.auth.user = payload.username;
 					ctx.auth.profile = payload.profile;
 					ctx.auth.flags = payload.flags;
-
-					await next();
 				}
 			} else {
-				await next();
+				// do nothing
 			}
 		} catch(err) {
-			await next();
+			// do nothing
 		}
 	} else {
-		await next();
+		// do nothing
 	}
+	await next();
 };
