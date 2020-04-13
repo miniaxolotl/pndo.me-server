@@ -264,6 +264,41 @@ router.all("/info/:id", VerifyFileAuthentication,
 	ctx.body = responce;
 });
 
+router.all("/search",
+	 async (ctx: ParameterizedContext) => {
+
+	const req = ctx.request.body;
+	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
+
+	const limit = req.limit ? parseInt(req.limit) : 15;
+	const page = parseInt(req.page);
+	
+	console.log(req.search_key.split(' ').join('|'));
+	
+	const query = {
+		"filename" : {
+			$regex: `.*(${req.search_key.split(' ').join('|')}).*`
+		},
+		owner: req.owner,
+		protected: false,
+		hidden: false,
+	};
+	
+	const query_data = await new Promise<any>(async (res) => {
+		const file_list = await models['uploads.metadata']
+		.find(query, { _id: 0, __v: 0 })
+		.limit(limit)
+		.skip((page -1) * limit)
+		.catch(() => {
+			res();
+		});
+
+		res(file_list);
+	});
+
+	ctx.body = query_data;
+});
+
 const Controller: Router = router;
 
 export default Controller;
