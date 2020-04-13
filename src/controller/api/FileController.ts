@@ -12,7 +12,7 @@ import Router from 'koa-router';
 import mongoose, { Model, Mongoose } from 'mongoose';
 
 import fs, { createReadStream, stat } from "fs";
-import http from "http";
+import http from "https";
 import crypto from "crypto";
 import path from "path";
 
@@ -98,8 +98,12 @@ router.post("/upload/url", VerifyIdentity,
 				const file_size = data.headers["content-length"];
 				const file_name = data.headers["content-disposition"]
 				?.split(';')[1]
-				.split('"')[1];
-				
+				.split('"')[1]
+				? data.headers["content-disposition"]
+					?.split(';')[1]
+					.split('"')[1]
+				: path.basename('resource');
+
 				if(file_type && file_name && file_size) {
 					data.pipe(file);
 					file.on('finish', () => {
