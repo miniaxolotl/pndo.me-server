@@ -10,7 +10,7 @@
 import { ParameterizedContext } from "koa";
 import Router from 'koa-router';
 import mongoose from "mongoose";
-import { noContentToProcess } from "util/errors";
+import { noContentToProcess } from "../../util/errors";
 
 const router: Router = new Router();
 
