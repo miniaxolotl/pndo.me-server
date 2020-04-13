@@ -133,7 +133,7 @@ router.post("/upload/url", VerifyIdentity,
 		const metadata_store = new models['uploads.metadata'](file_metadata);
 		await metadata_store.save().catch();
 
-		ctx.body = file_data;
+		ctx.body = file_metadata;
 	} else {
 		ctx.status = invalidRequest.status;
 		ctx.body = invalidRequest;
