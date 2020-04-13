@@ -12,7 +12,7 @@ import Router from 'koa-router';
 import mongoose, { Model, Mongoose } from 'mongoose';
 
 import fs, { createReadStream, stat } from "fs";
-import http from "https";
+import request from "request";
 import crypto from "crypto";
 import path from "path";
 
@@ -88,24 +88,23 @@ router.post("/upload/url", VerifyIdentity,
 	const file_hash = crypto.randomBytes(8).toString('hex');
 	const file_path = path.join(config.file_path, file_hash)
 
-	
 	var file = fs.createWriteStream(file_path);
 
 	const file_data = await new Promise<any>((res, rej) => {
-		http.get(resource, (data) => {
-			if(data.statusCode == 200) {
-				const file_type = data.headers["content-type"];
-				const file_size = data.headers["content-length"];
-				const file_name = data.headers["content-disposition"]
+		request(resource, (err, result, data) => {
+			
+			if(result.statusCode == 200) {
+				const file_type = result.headers["content-type"];
+				const file_size = result.headers["content-length"];
+				const file_name = result.headers["content-disposition"]
 				?.split(';')[1]
 				.split('"')[1]
-				? data.headers["content-disposition"]
+				? result.headers["content-disposition"]
 					?.split(';')[1]
 					.split('"')[1]
 				: path.basename('resource');
 
 				if(file_type && file_name && file_size) {
-					data.pipe(file);
 					file.on('finish', () => {
 						file.close();
 						res({ file_type, file_name, file_size });
@@ -116,7 +115,7 @@ router.post("/upload/url", VerifyIdentity,
 			} else {
 				res(null);
 			}
-		});
+		}).pipe(file);
 	});
 
 	if(file_data) {
@@ -195,22 +194,27 @@ router.all("/stream/:id", VerifyFileAuthentication,
 		const end = parts[1] ? parseInt(parts[1], 10) : file_data.bytes - 1;
 		const chunk_size = (end-start) + 1;
 
-		const file_stream = fs.createReadStream(file_path, {start, end});
-		
-		{ /* set headers */
-			ctx.response.set("connection", "keep-alive");
-			ctx.response.set("content-type", file_data.type);
-			ctx.response.set("content-length", chunk_size.toString());
-			ctx.response.set("accept-ranges", "bytes");
-			ctx.response.set("content-range",
+		if(fs.existsSync(file_path)) {
+			const file_stream = fs.createReadStream(file_path, {start, end});
+			
+			{ /* set headers */
+				ctx.response.set("connection", "keep-alive");
+				ctx.response.set("content-type", file_data.type);
+				ctx.response.set("content-length", chunk_size.toString());
+				ctx.response.set("accept-ranges", "bytes");
+				ctx.response.set("content-range",
 				`bytes ${start}-${end}/${file_data.bytes}`);
-			ctx.response.set("connection", "keep-alive");
-			ctx.response.set("content-disposition",
+				ctx.response.set("connection", "keep-alive");
+				ctx.response.set("content-disposition",
 				"inline; filename=\""+file_data.filename+'"');
+			}
+			
+			ctx.status = 206;
+			ctx.body = file_stream;
+		} else {
+			ctx.status = resourceNotFound.status;
+			ctx.body = resourceNotFound;
 		}
-
-		ctx.status = 206;
-		ctx.body = file_stream;
 	} else {
 		{ /* update stats */
 			const update_query = {
@@ -227,9 +231,14 @@ router.all("/stream/:id", VerifyFileAuthentication,
 			ctx.response.set("content-disposition",
 				"inline; filename=\""+file_data.filename+'"');
 		}
-		
-		ctx.status = 200;
-		ctx.body = fs.createReadStream(file_path);
+
+		if(fs.existsSync(file_path)) {
+			ctx.status = 200;
+			ctx.body = fs.createReadStream(file_path);
+		} else {
+			ctx.status = resourceNotFound.status;
+			ctx.body = resourceNotFound;
+		}
 	}
 });
 
@@ -245,24 +254,29 @@ router.all("/download/:id", VerifyFileAuthentication,
 	.findOne({ hash: ctx.params.id });
 	if(!file_data) { ctx.throw(resourceNotFound.status, resourceNotFound); }
 
-	const file_stream = fs.createReadStream(file_path);
+	if(fs.existsSync(file_path)) {
+		const file_stream = fs.createReadStream(file_path);
 
-	{ /* update stats */
-		const update_query = {
-			downloads: file_data.downloads ? ++file_data.downloads : 1,
+		{ /* update stats */
+			const update_query = {
+				downloads: file_data.downloads ? ++file_data.downloads : 1,
+			}
+			await models['uploads.metadata']
+			.updateOne({ hash: ctx.params.id }, update_query);
 		}
-		await models['uploads.metadata']
-		.updateOne({ hash: ctx.params.id }, update_query);
+
+		ctx.response.set("content-type", file_data.type);
+		ctx.response.set("content-length", file_data.bytes.toString());
+		ctx.response.set("accept-ranges", "bytes");
+		ctx.response.set("connection", "keep-alive");
+		ctx.response.set("content-disposition",
+			"inline; filename=\""+file_data.filename+'"');
+
+		ctx.body = file_stream;
+	} else {
+		ctx.status = resourceNotFound.status;
+		ctx.body = resourceNotFound;
 	}
-
-	ctx.response.set("content-type", file_data.type);
-	ctx.response.set("content-length", file_data.bytes.toString());
-	ctx.response.set("accept-ranges", "bytes");
-	ctx.response.set("connection", "keep-alive");
-	ctx.response.set("content-disposition",
-		"inline; filename=\""+file_data.filename+'"');
-
-	ctx.body = file_stream;
 });
 
 router.all("/download/:id/:filename", VerifyFileAuthentication,
@@ -279,24 +293,29 @@ router.all("/download/:id/:filename", VerifyFileAuthentication,
 		ctx.throw(resourceNotFound.status, resourceNotFound);
 	});
 
-	const readStream = fs.createReadStream(file_path);
+	if(fs.existsSync(file_path)) {
+		const readStream = fs.createReadStream(file_path);
 
-	{ /* update stats */
-		const update_query = {
-			downloads: file_data.downloads ? ++file_data.downloads : 1,
+		{ /* update stats */
+			const update_query = {
+				downloads: file_data.downloads ? ++file_data.downloads : 1,
+			}
+			await models['uploads.metadata']
+			.updateOne({ hash: ctx.params.id }, update_query);
 		}
-		await models['uploads.metadata']
-		.updateOne({ hash: ctx.params.id }, update_query);
+
+		ctx.response.set("content-type", file_data.type);
+		ctx.response.set("content-length", file_data.bytes.toString());
+		ctx.response.set("accept-ranges", "bytes");
+		ctx.response.set("connection", "keep-alive");
+		ctx.response.set("content-disposition",
+			"inline; filename="+file_data.filename+'"');
+
+		ctx.body = readStream;
+	} else {
+		ctx.status = resourceNotFound.status;
+		ctx.body = resourceNotFound;
 	}
-
-	ctx.response.set("content-type", file_data.type);
-	ctx.response.set("content-length", file_data.bytes.toString());
-	ctx.response.set("accept-ranges", "bytes");
-	ctx.response.set("connection", "keep-alive");
-	ctx.response.set("content-disposition",
-		"inline; filename="+file_data.filename+'"');
-
-	ctx.body = readStream;
 });
 
 router.all("/info/:id", VerifyFileAuthentication,
