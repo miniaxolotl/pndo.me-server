@@ -18,25 +18,32 @@ router.all("/filestats", async (ctx: ParameterizedContext) => {
 	// const req = ctx.request.body;
 	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 
-	const metadata_store = models['uploads.metadata'];
+	const user_store = models['uploads.metadata'];
 
-	await metadata_store.aggregate([{
-			$match: {}
-		}, {
-			$group: {
-				_id: "file count",
-				bytes: { $sum: "$bytes" },
-				count: { $sum: 1 },
-				last_insert: { $max: "$uploaded" }
+	const query_data = await new Promise<any>(async (res) => {
+		user_store.aggregate([{
+				$match: {}
+			}, {
+				$group: {
+					_id: "file count",
+					bytes: { $sum: "$bytes" },
+					count: { $sum: 1 },
+					last_insert: { $max: "$uploaded" }
+				}
+			}], (err, data: any[]) => {
+
+			if(data.length > 0) { res(data); }
+			else {
+				res();
 			}
-		}], (err, data) => {
+		});
+	});
 
-		if(data[0]) { ctx.body = data[0]; }
-		else {
-			ctx.body = noContentToProcess;
-			ctx.status = noContentToProcess.status;
-		}
-	}).catch(() => null);
+	if(query_data) { ctx.body = query_data[0]; }
+	else {
+		ctx.status = noContentToProcess.status;
+		ctx.body = noContentToProcess;
+	}
 });
 
 router.all("/userstats", async (ctx: ParameterizedContext) => {
@@ -45,22 +52,29 @@ router.all("/userstats", async (ctx: ParameterizedContext) => {
 
 	const user_store = models['User'];
 
-	await user_store.aggregate([{
-			$match: {}
-		}, {
-			$group: {
-				_id: "user count",
-				count: { $sum: 1 },
-				last_insert: { $max: "$created" }
-			}
-		}], (err, data) => {
+	const query_data = await new Promise<any>(async (res) => {
+		await user_store.aggregate([{
+				$match: {}
+			}, {
+				$group: {
+					_id: "user count",
+					count: { $sum: 1 },
+					last_insert: { $max: "$created" }
+				}
+			}], (err, data: any[]) => {
 
-		if(data[0]) { ctx.body = data[0]; }
-		else {
-			ctx.body = noContentToProcess;
-			ctx.status = noContentToProcess.status;
-		}
-	}).catch(() => null);
+			if(data.length > 0) { res(data); }
+			else {
+				res();
+			}
+		});
+	});
+
+	if(query_data) { ctx.body = query_data[0]; }
+	else {
+		ctx.status = noContentToProcess.status;
+		ctx.body = noContentToProcess;
+	}
 });
 
 const Controller: Router = router;
