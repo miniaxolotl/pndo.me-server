@@ -124,8 +124,16 @@ router.post("/upload/url", VerifyIdentity,
 
 				if(file_type && file_name && file_size) {
 					file.on('finish', () => {
+						const in_stream = fs.createReadStream(file_path);
+						const sha256 =
+							in_stream.pipe(crypto.createHash('sha256'))
+							.digest('hex');
+						const md5 =
+							in_stream.pipe(crypto.createHash('md5'))
+							.digest('hex');
+
 						file.close();
-						res({ file_type, file_name, file_size });
+						res({ file_type, file_name, file_size, sha256, md5 });
 					});
 				} else {
 					res(null);
