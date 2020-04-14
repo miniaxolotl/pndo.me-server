@@ -50,6 +50,11 @@ const MetadataModel = new Schema({
 		default: true,
 		trim: true,
 	},
+	deleted: {
+		type: Boolean,
+		default: false,
+		trim: true,
+	},
 	downloads: {
 		type: Number,
 		default: 0,

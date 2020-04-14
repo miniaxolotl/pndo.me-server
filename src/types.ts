@@ -53,6 +53,7 @@ export interface Metadata {
 	owner?: string | null;
 	downloads?: number;
 	protected?: boolean;
+	deleted?: boolean;
 	hidden: boolean;
 	views?: number;
 	bytes: number;
@@ -69,6 +70,7 @@ export interface MetadataSanitised {
 	owner?: string | null;
 	downloads?: number;
 	protected?: boolean;
+	deleted?: boolean;
 	hidden: boolean;
 	views?: number;
 	bytes: number;

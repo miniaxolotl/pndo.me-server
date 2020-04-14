@@ -32,6 +32,11 @@ export const resourceDeleted: StatusMessage = {
 	message: "Resource successfully deleted.",
 };
 
+export const resourceQueuefDeleted: StatusMessage = {
+	status: 200,
+	message: "Resource successfully added to deletion queue.",
+};
+
 export const noContentToProcess: StatusMessage = {
 	status: 204,
 	message: "No content to process.",

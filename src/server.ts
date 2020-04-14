@@ -27,6 +27,9 @@ import config from "../res/config.json";
 import { system_usage } from './util/sys-util';
 import { invalidRequest } from './util/errors';
 
+import Agenda from 'agenda';
+import { DeleteFileService } from './controller/services/DeleteQueueService';
+
 /************************************************
  * ANCHOR setup
  ************************************************/
@@ -58,6 +61,37 @@ mongoose.model(`uploads.comment`, CommentModel);
 
 app.context.db = mongoose;
 app.context.models = mongoose.models;
+
+export const Models = mongoose.models;
+
+/************************************************
+ * ANCHOR cron jobs
+ ************************************************/
+
+export const agenda = new Agenda({
+	db: {
+		address: config.db.url,
+		options: {
+			useUnifiedTopology: true,
+		},
+	}
+});
+
+agenda.maxConcurrency(20);
+
+agenda.define('AcidifyDatabase', async (job) => {
+	// do something
+});
+
+agenda.define('QueueFileDelete', async (job) => {
+	DeleteFileService(job);
+});
+
+(async () => {
+	await agenda.start();
+	
+	await agenda.every('* * 3 * *', 'AcidifyDatabase');
+})();
 
 /************************************************
  * ANCHOR cors

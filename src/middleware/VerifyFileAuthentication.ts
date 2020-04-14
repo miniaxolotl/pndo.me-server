@@ -34,6 +34,9 @@ export default async (ctx: ParameterizedContext, next: any): Promise<void> => {
 		if(file_data == null) {
 			ctx.status = resourceNotFound.status;
 			ctx.body = resourceNotFound;
+		} else if(file_data.deleted) {
+			ctx.status = resourceNotFound.status;
+			ctx.body = resourceNotFound;
 		} else {
 			if(token == null) {
 				ctx.status = unauthorizedAccess.status;
@@ -76,6 +79,9 @@ export default async (ctx: ParameterizedContext, next: any): Promise<void> => {
 		if(file_data.protected == true) {
 			ctx.status = unauthorizedAccess.status;
 			ctx.body = unauthorizedAccess;
+		} else if(file_data.deleted) {
+			ctx.status = resourceNotFound.status;
+			ctx.body = resourceNotFound;
 		} else {
 			await next();
 		}

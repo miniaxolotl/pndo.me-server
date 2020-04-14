@@ -18,10 +18,11 @@ import path from "path";
 
 import { ResgisterRequest, Metadata, MetadataSanitised, UploadRequest } from "types";
 import { invalidBody, serverError,
-	resourceNotFound, resourceDeleted, invalidRequest } from "../../util/errors";
+	resourceNotFound, resourceDeleted, invalidRequest, resourceQueuefDeleted } from "../../util/errors";
 
 import config from "../../../res/config.json";
 import { VerifyFileAuthentication, VerifyIdentity } from "../../middleware";
+import { agenda } from "../../server";
 
 /************************************************
  * ANCHOR routes
@@ -178,21 +179,19 @@ router.post("/delete/:id", VerifyFileAuthentication,
 	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 
 	const file_path = path.join(config.file_store.slow[0], ctx.params.id);
-	
+
 	await models['uploads.metadata']
-	.findOneAndDelete({ file_id: ctx.params.id })
+	.updateOne({ file_id: ctx.params.id }, { deleted: true })
+	.then(() => {
+		agenda.now('QueueFileDelete', { file_id: ctx.params.id, file_path });
+
+		ctx.status = resourceQueuefDeleted.status;
+		ctx.body = resourceQueuefDeleted;
+	})
 	.catch(() => {
-		ctx.throw(resourceNotFound.status, resourceNotFound);
+		ctx.status = serverError.status;
+		ctx.body = serverError;
 	});
-
-	try {
-		fs.unlinkSync(file_path);
-	} catch(err) {
-		ctx.throw(resourceNotFound.status, resourceNotFound);
-	}	
-
-	ctx.status = resourceDeleted.status;
-	ctx.body = resourceDeleted;
 });
 
 router.all("/stream/:id", VerifyFileAuthentication,
