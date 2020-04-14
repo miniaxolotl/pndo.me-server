@@ -82,7 +82,7 @@ app.use(cors({
 app.use(json({ pretty: false, param: 'pretty' }));
 
 app.use(Body({
-	formidable: { maxFileSize: 2**32, uploadDir: config.tmp_path },
+	formidable: { maxFileSize: 2**32, uploadDir: config.temp_store },
     multipart: true,
 	urlencoded: true,
 }));
@@ -133,15 +133,7 @@ app.use(session(CONFIG, app));
 }
 
 { /* WEBSOCKET */
-	// socket_router.use('/socket/mseta', async (ctx: ParameterizedContext) => {
-	// 	ctx.websocket.on('message', function (message) {
-	// 		// while(true) {
-	// 			ctx.websocket.send("system_usage()");
-	// 		// }
-	// 	});
-	// });
-
-	function sleep(ms) {
+	const sleep = (ms) => {
 		return new Promise((resolve) => {
 		  setTimeout(resolve, ms);
 		});
@@ -162,7 +154,6 @@ app.use(session(CONFIG, app));
 				
 				  await sleep(1000);
 			}
-
 		});
 	}
 
