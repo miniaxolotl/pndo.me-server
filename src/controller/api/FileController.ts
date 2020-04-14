@@ -408,21 +408,22 @@ router.all("/search",
 		? req.search_key.split(' ').join('|')
 		: ctx.query.search_key ? ctx.query.search_key : '';
 
-	const query = {
+	const query: any = {
 		"filename" : {
 			$regex: `.*(${search_key}).*`,
 			$options: 'i',
 		},
-		owner: req.owner,
 		protected: false,
 		hidden: false,
 	};
+
+	if(req.owner) { query.owner = req.owner; }
 	
 	const query_data = await new Promise<any>(async (res) => {
 		const file_list = await models['uploads.metadata']
 		.find(query, { _id: 0, __v: 0 })
 		.limit(limit)
-		.skip((page -1) * limit)
+		.skip((page - 1) * limit)
 		.catch(() => {
 			res();
 		});
