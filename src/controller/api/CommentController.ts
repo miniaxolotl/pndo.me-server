@@ -10,70 +10,92 @@
 import { ParameterizedContext } from "koa";
 import Router from 'koa-router';
 import mongoose from "mongoose";
-import { noContentToProcess } from "../../util/errors";
+import { noContentToProcess, invalidRequest, unauthorizedAccess, resourceNotFound } from "../../util/errors";
+import { JWTAuthenticate } from "../../middleware";
+import { ThreadComment, Metadata } from "types";
 
 const router: Router = new Router();
 
-router.all("/filestats", async (ctx: ParameterizedContext) => {
-	// const req = ctx.request.body;
+router.all("/:id", async (ctx: ParameterizedContext) => {
+	const req = ctx.request.body;
 	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 
-	const file_store = models['uploads.metadata'];
+	const file_data: Metadata = await models['uploads.metadata']
+	.findOne({ file_id: ctx.params.id });
+	
+	if(!file_data
+	|| (file_data.protected && (file_data.owner != ctx.auth.user))) {
+		if(!file_data) {
+			ctx.status = resourceNotFound.status;
+			ctx.body = resourceNotFound;
+		} else {
 
-	const query_data = await new Promise<any>(async (res) => {
-		file_store.aggregate([{
-				$match: {}
-			}, {
-				$group: {
-					_id: "file count",
-					bytes: { $sum: "$bytes" },
-					count: { $sum: 1 },
-					last_insert: { $max: "$uploaded" }
-				}
-			}], (err, data: any[]) => {
-
-			if(data.length > 0) { res(data); }
-			else {
-				res();
-			}
-		});
-	});
-
-	if(query_data) { ctx.body = query_data[0]; }
-	else {
-		ctx.status = noContentToProcess.status;
-		ctx.body = noContentToProcess;
+			ctx.status = unauthorizedAccess.status;
+			ctx.body = unauthorizedAccess;
+		}
+	} else {
+		const query = {
+			form_id: ctx.params.id,
+		};
+		
+		const filter = {
+			__v: 0,
+			_id: 0,
+		};
+		
+		const comment_list = await models['uploads.comment']
+		.find(query, filter)
+		.sort({ created: -1 });
+		
+		if(!comment_list) {
+			ctx.status = noContentToProcess.status;
+			ctx.body = noContentToProcess;
+		} else {
+			ctx.body = comment_list;
+		}
 	}
 });
 
-router.all("/userstats", async (ctx: ParameterizedContext) => {
-	// const req = ctx.request.body;
+router.all("/:id/create", async (ctx: ParameterizedContext) => {
+	const req = ctx.request.body;
 	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 
-	const user_store = models['User'];
+	const file_data: Metadata = await models['uploads.metadata']
+	.findOne({ file_id: ctx.params.id });
+	
+	if(!file_data
+	|| (file_data.protected && (file_data.owner != ctx.auth.user))) {
+		if(!file_data) {
+			ctx.status = resourceNotFound.status;
+			ctx.body = resourceNotFound;
+		} else {
 
-	const query_data = await new Promise<any>(async (res) => {
-		await user_store.aggregate([{
-				$match: {}
-			}, {
-				$group: {
-					_id: "user count",
-					count: { $sum: 1 },
-					last_insert: { $max: "$created" }
-				}
-			}], (err, data: any[]) => {
-
-			if(data.length > 0) { res(data); }
-			else {
+			ctx.status = unauthorizedAccess.status;
+			ctx.body = unauthorizedAccess;
+		}
+	} else {
+		const comment_data: ThreadComment = {
+			form_id: ctx.params.id,
+			message: req.message,
+			sender: ctx.auth.profile,
+		};
+		
+		const comment_store
+			= new models['uploads.comment'](comment_data);
+		const status = new Promise((res, rej) => {
+			comment_store.save()
+			.catch((err) => {
 				res();
-			}
+			});
+			res(comment_data);
 		});
-	});
 
-	if(query_data) { ctx.body = query_data[0]; }
-	else {
-		ctx.status = noContentToProcess.status;
-		ctx.body = noContentToProcess;
+		if(!status || !req.message) {
+			ctx.status = invalidRequest.status;
+			ctx.body = invalidRequest;
+		} else {
+			ctx.body = comment_data;
+		}
 	}
 });
 

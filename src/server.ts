@@ -20,7 +20,8 @@ import mongoose from 'mongoose';
 import { api, authentication } from "./controller";
 import { JWTAuthenticate } from './middleware';
 
-import { UserModel, MetadataModel, FileTimestampModel } from "./model"
+import { UserModel, MetadataModel, FileTimestampModel,
+	CommentModel } from "./model"
 
 import config from "../res/config.json";
 import { system_usage } from './util/sys-util';
@@ -52,6 +53,7 @@ mongoose.connect(config.db.url, {
 mongoose.model(`User`, UserModel);
 mongoose.model(`uploads.metadata`, MetadataModel);
 mongoose.model(`uploads.timestamp`, FileTimestampModel);
+mongoose.model(`uploads.comment`, CommentModel);
 
 app.context.db = mongoose;
 app.context.models = mongoose.models;
@@ -126,8 +128,8 @@ app.use(session(CONFIG, app));
 	}
 	
 	{ /* conversations / comments */ // TODO
-		router.use("/form/:id", api.FormController.routes());
-		router.use("/comment/:id", api.CommentController.routes());
+		router.use("/api/comment",
+			JWTAuthenticate, api.CommentController.routes());
 	}
 
 	app.use(router.routes());

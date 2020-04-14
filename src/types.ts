@@ -76,6 +76,12 @@ export interface MetadataSanitised {
 	expires?: Date | null;
 }
 
+export interface ThreadComment {
+	message: string;
+	form_id: string;
+	sender?: string;
+}
+
 export interface MetaFile {
 	count: number;
 	size: number;

@@ -54,7 +54,7 @@ export const invalidForm: StatusMessage = {
 
 export const invalidRequest: StatusMessage = {
 	status: 400,
-	message: "Requst data was invalid.",
+	message: "Requst action was invalid.",
 };
 
 export const serverError: StatusMessage = {

@@ -8,36 +8,22 @@
  */
 
 import { Schema } from 'mongoose';
-import { UserFlags } from 'types';
 
-
-const default_flags: UserFlags = {
-	admin: false,
-	moderator: false,
-	banned: false,
-};
-
-const UserModel = new Schema({
-	profile: {
-		type: String,
-		required: true,
-		unique: true,
-		trim: true,
-	},
-	username: {
-		type: String,
-		required: true,
-		unique: true,
-		trim: true,
-	},
-	password: {
+const CommentModel = new Schema({
+	form_id: {
 		type: String,
 		required: true,
 		trim: true,
 	},
-	flags: {
-		type: Object,
-		default: default_flags,
+	message: {
+		type: String,
+		required: true,
+		trim: true,
+	},
+	sender: {
+		type: String,
+		default: null,
+		trim: true,
 	},
 	created: {
 		type: Date,
@@ -45,4 +31,4 @@ const UserModel = new Schema({
 	},
 });
 
-export default UserModel;
+export default CommentModel;
