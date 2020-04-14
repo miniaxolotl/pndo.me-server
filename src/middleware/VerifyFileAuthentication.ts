@@ -9,8 +9,8 @@
 
 import config from "../../res/config.json";
 import { TimedJWT } from "../util";
-import { unauthorizedAccess, noContentToProcess, resourceNotFound } from "../util/errors";
-import { UserPayload, UserData, Metadata } from "types";
+import { unauthorizedAccess, resourceNotFound, serverError } from "../util/errors";
+import { UserData, Metadata } from "types";
 import { ParameterizedContext } from "koa";
 
 import mongoose from "mongoose";
@@ -67,8 +67,8 @@ export default async (ctx: ParameterizedContext, next: any): Promise<void> => {
 						ctx.body = unauthorizedAccess;
 					}
 				} catch(err) {
-					ctx.status = unauthorizedAccess.status;
-					ctx.body = unauthorizedAccess;
+					ctx.status = serverError.status;
+					ctx.body = serverError;
 				}
 			}
 		}

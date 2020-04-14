@@ -20,7 +20,7 @@ import mongoose from 'mongoose';
 import { api, authentication } from "./controller";
 import { JWTAuthenticate } from './middleware';
 
-import { UserModel, MetadataModel } from "./model"
+import { UserModel, MetadataModel, FileTimestampModel } from "./model"
 
 import config from "../res/config.json";
 import { system_usage } from './util/sys-util';
@@ -51,6 +51,7 @@ mongoose.connect(config.db.url, {
 
 mongoose.model(`User`, UserModel);
 mongoose.model(`uploads.metadata`, MetadataModel);
+mongoose.model(`uploads.timestamp`, FileTimestampModel);
 
 app.context.db = mongoose;
 app.context.models = mongoose.models;

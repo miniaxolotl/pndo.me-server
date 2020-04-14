@@ -85,3 +85,8 @@ export interface TimedPayload {
 	validUntil: number;
 	createdOn: number;
 }
+
+export interface FileTimestamp {
+	hash: string;
+	time: Date;
+}

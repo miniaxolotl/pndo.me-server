@@ -40,39 +40,50 @@ router.post("/upload", VerifyIdentity, async (ctx: ParameterizedContext) => {
 
 	const file: any = (ctx.request as any).files.upload_file;
 
-	const file_hash = crypto.randomBytes(8).toString('hex');
+	const file_hash = crypto.randomBytes(12).toString('hex');
 
 	const tmp_path = file.path;
-	const file_path = path.join(config.file_path, file_hash);
+	const file_path = path.join(config.file_store.slow[0], file_hash);
 
 	const file_data = await new Promise<Metadata>((resolve, reject) => {
-		fs.rename(tmp_path, file_path, async (err) => {
-			if(err) { reject(); }
+		const in_stream = fs.createReadStream(tmp_path);
+		const out_stream = fs.createWriteStream(file_path);
 
-			const file_data: Metadata = {
-				hash: file_hash,
-				filename: file.name,
-				type: file.type,
-				bytes: file.size,
-				owner: ctx.auth.user
+		try {
+			in_stream.pipe(out_stream);
+			in_stream.on('end', async () => {
+				fs.unlinkSync(tmp_path);
+				
+				const metadata_data: Metadata = {
+					hash: file_hash,
+					filename: file.name,
+					type: file.type,
+					bytes: file.size,
+					owner: ctx.auth.user
 					? ctx.auth.user : null,
-				protected: req.protected && ctx.auth.user 
+					protected: req.protected && ctx.auth.user 
 					? req.protected : false,
-				hidden: (req.protected == true && ctx.auth.user)
-					|| !req.hidden || req.hidden == 'true' || req.hidden == true
-					? true : false,
-			};
-			
-			const metadata_store = new models['uploads.metadata'](file_data);
-			await metadata_store.save().catch(() => { reject(); });
+					hidden: (req.protected == true && ctx.auth.user)
+					|| !req.hidden || req.hidden == 'true'
+					|| req.hidden == true ? true : false,
+				};
+				
+				const metadata_store
+					= new models['uploads.metadata'](metadata_data);
+				await metadata_store.save().catch(() => { });
 
-			resolve(file_data);
-		});
+				resolve(metadata_data);
+			});
+		} catch {
+			reject();
+		}
 	}).catch(() => {
-		ctx.throw(serverError.status, serverError);
+		ctx.status = serverError.status;
+		ctx.body = serverError;
+	}).then((file_data) => {
+		ctx.body = file_data;
 	});
 
-	ctx.body = file_data;
 });
 
 router.post("/upload/url", VerifyIdentity,
@@ -86,7 +97,7 @@ router.post("/upload/url", VerifyIdentity,
 
 	const resource: any = req.resource_url;
 	const file_hash = crypto.randomBytes(8).toString('hex');
-	const file_path = path.join(config.file_path, file_hash)
+	const file_path = path.join(config.file_store.slow[0], file_hash)
 
 	var file = fs.createWriteStream(file_path);
 
@@ -149,7 +160,7 @@ router.post("/delete/:id", VerifyFileAuthentication,
 	const req = ctx.request.body;
 	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 
-	const file_path = path.join(config.file_path, ctx.params.id);
+	const file_path = path.join(config.file_store.slow[0], ctx.params.id);
 	
 	await models['uploads.metadata']
 	.findOneAndDelete({ hash: ctx.params.id })
@@ -173,7 +184,7 @@ router.all("/stream/:id", VerifyFileAuthentication,
 	const req = ctx.request.body;
 	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 
-	const file_path = path.join(config.file_path, ctx.params.id);
+	const file_path = path.join(config.file_store.slow[0], ctx.params.id);
 
 	const file_data: Metadata = await models['uploads.metadata']
 	.findOne({ hash: ctx.params.id });
@@ -222,6 +233,10 @@ router.all("/stream/:id", VerifyFileAuthentication,
 			}
 			await models['uploads.metadata']
 			.updateOne({ hash: ctx.params.id }, update_query);
+
+			const timestamp_store
+				= new models['uploads.timestamp']({ hash: ctx.params.id });
+			await timestamp_store.save().catch(() => { });
 		}	
 
 		{ /* set headers */
@@ -248,7 +263,7 @@ router.all("/download/:id", VerifyFileAuthentication,
 	const req = ctx.request.body;
 	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 
-	const file_path = path.join(config.file_path, ctx.params.id);
+	const file_path = path.join(config.file_store.slow[0], ctx.params.id);
 
 	const file_data: Metadata = await models['uploads.metadata']
 	.findOne({ hash: ctx.params.id });
@@ -261,8 +276,13 @@ router.all("/download/:id", VerifyFileAuthentication,
 			const update_query = {
 				downloads: file_data.downloads ? ++file_data.downloads : 1,
 			}
+
 			await models['uploads.metadata']
 			.updateOne({ hash: ctx.params.id }, update_query);
+
+			const timestamp_store
+				= new models['uploads.timestamp']({ hash: ctx.params.id });
+			await timestamp_store.save().catch(() => { });
 		}
 
 		ctx.response.set("content-type", file_data.type);
@@ -285,7 +305,7 @@ router.all("/download/:id/:filename", VerifyFileAuthentication,
 	const req = ctx.request.body;
 	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 
-	const file_path = path.join(config.file_path, ctx.params.id);
+	const file_path = path.join(config.file_store.slow[0], ctx.params.id);
 
 	const file_data: Metadata = await models['uploads.metadata']
 	.findOne({ hash: ctx.params.id, filename: ctx.params.filename })
@@ -302,6 +322,10 @@ router.all("/download/:id/:filename", VerifyFileAuthentication,
 			}
 			await models['uploads.metadata']
 			.updateOne({ hash: ctx.params.id }, update_query);
+			
+			const timestamp_store
+				= new models['uploads.timestamp']({ hash: ctx.params.id });
+			await timestamp_store.save().catch(() => { });
 		}
 
 		ctx.response.set("content-type", file_data.type);

@@ -33,23 +33,31 @@ export default async (ctx: any, next: any): Promise<void> => {
 				const payload: UserData = authorization.payload;
 
 				let user: UserData = await models.User
-				.findOne({ username: payload.username });
+				.findOne({ profile: payload.profile });
 
 				if(user == null) {
-					// do nothing
+					ctx.auth.user = null;
+					ctx.auth.profile = null;
+					ctx.auth.flags = undefined;
 				} else {
 					ctx.auth.user = payload.username;
 					ctx.auth.profile = payload.profile;
 					ctx.auth.flags = payload.flags;
 				}
 			} else {
-				// do nothing
+				ctx.auth.user = null;
+				ctx.auth.profile = null;
+				ctx.auth.flags = undefined;
 			}
 		} catch(err) {
-			// do nothing
+			ctx.auth.user = null;
+			ctx.auth.profile = null;
+			ctx.auth.flags = undefined;
 		}
 	} else {
-		// do nothing
+		ctx.auth.user = null;
+		ctx.auth.profile = null;
+		ctx.auth.flags = undefined;
 	}
 	await next();
 };
