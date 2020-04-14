@@ -26,7 +26,7 @@ export default async (ctx: ParameterizedContext, next: any): Promise<void> => {
 
 	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 	const file_data: Metadata = await models['uploads.metadata']
-	.findOne({ hash: ctx.params.id });
+	.findOne({ file_id: ctx.params.id });
 
 	if(authentication) {
 		const token = authentication.split(' ')[1];

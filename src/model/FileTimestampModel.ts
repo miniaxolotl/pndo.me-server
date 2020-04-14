@@ -10,7 +10,7 @@
 import { Schema, Types } from 'mongoose';
 
 const FileTimestampModel = new Schema({
-	hash: {
+	file_id: {
 		type: String,
 		required: true,
 		trim: true,

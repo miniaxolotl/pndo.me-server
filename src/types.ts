@@ -45,15 +45,15 @@ export interface AuthenticationResponce {
 }
 
 export interface Metadata {
-	ref?: Types.ObjectId;
-	uuid?: string;
-	hash?: string;
+	file_id?: string;
+	sha256: string;
+	md5: string;
 	filename:  string;
 	type: string;
 	owner?: string | null;
+	downloads?: number;
 	protected?: boolean;
 	hidden: boolean;
-	downloads?: number;
 	views?: number;
 	bytes: number;
 	uploaded?: Date;
@@ -61,7 +61,9 @@ export interface Metadata {
 }
 
 export interface MetadataSanitised {
-	hash?: string;
+	file_id?: string;
+	sha256: string;
+	md5: string;
 	filename:  string;
 	type: string;
 	owner?: string | null;
@@ -87,6 +89,6 @@ export interface TimedPayload {
 }
 
 export interface FileTimestamp {
-	hash: string;
+	file_id: string;
 	time: Date;
 }

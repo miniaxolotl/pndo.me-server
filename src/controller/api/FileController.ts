@@ -40,7 +40,7 @@ router.post("/upload", VerifyIdentity, async (ctx: ParameterizedContext) => {
 
 	const file: any = (ctx.request as any).files.upload_file;
 
-	const file_hash = crypto.randomBytes(12).toString('hex');
+	const file_hash = crypto.randomBytes(8).toString('hex');
 
 	const tmp_path = file.path;
 	const file_path = path.join(config.file_store.slow[0], file_hash);
@@ -52,10 +52,17 @@ router.post("/upload", VerifyIdentity, async (ctx: ParameterizedContext) => {
 		try {
 			in_stream.pipe(out_stream);
 			in_stream.on('end', async () => {
+				const sha256 =
+				in_stream.pipe(crypto.createHash('sha256')).digest('hex');
+				const md5 =
+				in_stream.pipe(crypto.createHash('md5')).digest('hex');
+
 				fs.unlinkSync(tmp_path);
 				
 				const metadata_data: Metadata = {
-					hash: file_hash,
+					file_id: file_hash,
+					sha256: sha256,
+					md5: md5,
 					filename: file.name,
 					type: file.type,
 					bytes: file.size,
@@ -131,7 +138,9 @@ router.post("/upload/url", VerifyIdentity,
 
 	if(file_data) {
 		const file_metadata: Metadata = {
-			hash: file_hash,
+			file_id: file_hash,
+			sha256: file_data.sha256,
+			md5: file_data.md5,
 			filename: file_data.file_name,
 			type: file_data.file_type,
 			bytes: file_data.file_size,
@@ -163,7 +172,7 @@ router.post("/delete/:id", VerifyFileAuthentication,
 	const file_path = path.join(config.file_store.slow[0], ctx.params.id);
 	
 	await models['uploads.metadata']
-	.findOneAndDelete({ hash: ctx.params.id })
+	.findOneAndDelete({ file_id: ctx.params.id })
 	.catch(() => {
 		ctx.throw(resourceNotFound.status, resourceNotFound);
 	});
@@ -187,7 +196,7 @@ router.all("/stream/:id", VerifyFileAuthentication,
 	const file_path = path.join(config.file_store.slow[0], ctx.params.id);
 
 	const file_data: Metadata = await models['uploads.metadata']
-	.findOne({ hash: ctx.params.id });
+	.findOne({ file_id: ctx.params.id });
 	if(!file_data) { ctx.throw(resourceNotFound.status, resourceNotFound); }
 	
 	try {
@@ -232,10 +241,10 @@ router.all("/stream/:id", VerifyFileAuthentication,
 				downloads: file_data.downloads ? ++file_data.downloads : 1,
 			}
 			await models['uploads.metadata']
-			.updateOne({ hash: ctx.params.id }, update_query);
+			.updateOne({ file_id: ctx.params.id }, update_query);
 
 			const timestamp_store
-				= new models['uploads.timestamp']({ hash: ctx.params.id });
+				= new models['uploads.timestamp']({ file_id: ctx.params.id });
 			await timestamp_store.save().catch(() => { });
 		}	
 
@@ -266,7 +275,7 @@ router.all("/download/:id", VerifyFileAuthentication,
 	const file_path = path.join(config.file_store.slow[0], ctx.params.id);
 
 	const file_data: Metadata = await models['uploads.metadata']
-	.findOne({ hash: ctx.params.id });
+	.findOne({ file_id: ctx.params.id });
 	if(!file_data) { ctx.throw(resourceNotFound.status, resourceNotFound); }
 
 	if(fs.existsSync(file_path)) {
@@ -278,10 +287,10 @@ router.all("/download/:id", VerifyFileAuthentication,
 			}
 
 			await models['uploads.metadata']
-			.updateOne({ hash: ctx.params.id }, update_query);
+			.updateOne({ file_id: ctx.params.id }, update_query);
 
 			const timestamp_store
-				= new models['uploads.timestamp']({ hash: ctx.params.id });
+				= new models['uploads.timestamp']({ file_id: ctx.params.id });
 			await timestamp_store.save().catch(() => { });
 		}
 
@@ -308,7 +317,7 @@ router.all("/download/:id/:filename", VerifyFileAuthentication,
 	const file_path = path.join(config.file_store.slow[0], ctx.params.id);
 
 	const file_data: Metadata = await models['uploads.metadata']
-	.findOne({ hash: ctx.params.id, filename: ctx.params.filename })
+	.findOne({ file_id: ctx.params.id, filename: ctx.params.filename })
 	.catch(() => {
 		ctx.throw(resourceNotFound.status, resourceNotFound);
 	});
@@ -321,10 +330,10 @@ router.all("/download/:id/:filename", VerifyFileAuthentication,
 				downloads: file_data.downloads ? ++file_data.downloads : 1,
 			}
 			await models['uploads.metadata']
-			.updateOne({ hash: ctx.params.id }, update_query);
+			.updateOne({ file_id: ctx.params.id }, update_query);
 			
 			const timestamp_store
-				= new models['uploads.timestamp']({ hash: ctx.params.id });
+				= new models['uploads.timestamp']({ file_id: ctx.params.id });
 			await timestamp_store.save().catch(() => { });
 		}
 
@@ -349,7 +358,7 @@ router.all("/info/:id", VerifyFileAuthentication,
 	const models: { [index: string]: mongoose.Model<any, {}> } = ctx.models;
 
 	const file_data: Metadata = await models['uploads.metadata']
-	.findOne({ hash: ctx.params.id });
+	.findOne({ file_id: ctx.params.id });
 	if(!file_data) { ctx.throw(resourceNotFound.status, resourceNotFound); }
 
 	{ /* update stats */
@@ -357,11 +366,13 @@ router.all("/info/:id", VerifyFileAuthentication,
 			views: file_data.views ? ++file_data.views : 1,
 		}
 		await models['uploads.metadata']
-		.updateOne({ hash: ctx.params.id }, update_query);
+		.updateOne({ file_id: ctx.params.id }, update_query);
 	}
 
 	const responce: MetadataSanitised = {
-		hash: file_data.hash,
+		file_id: file_data.file_id,
+		sha256: file_data.sha256,
+		md5: file_data.md5,
 		filename: file_data.filename,
 		type: file_data.type,
 		owner: file_data.owner ? file_data.owner : null,

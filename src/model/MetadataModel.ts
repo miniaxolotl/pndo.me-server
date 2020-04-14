@@ -10,10 +10,20 @@
 import { Schema, Types } from 'mongoose';
 
 const MetadataModel = new Schema({
-	hash: {
+	file_id: {
 		type: String,
 		required: true,
 		unique: true,
+		trim: true,
+	},
+	sha256: {
+		type: String,
+		required: true,
+		trim: true,
+	},
+	md5: {
+		type: String,
+		required: true,
 		trim: true,
 	},
 	filename: {
