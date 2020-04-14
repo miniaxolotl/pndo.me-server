@@ -10,6 +10,11 @@
 import { Schema } from 'mongoose';
 
 const CommentModel = new Schema({
+	comment_id: {
+		type: String,
+		required: true,
+		trim: true,
+	},
 	form_id: {
 		type: String,
 		required: true,

@@ -77,6 +77,7 @@ export interface MetadataSanitised {
 }
 
 export interface ThreadComment {
+	comment_id: string;
 	message: string;
 	form_id: string;
 	sender?: string;
