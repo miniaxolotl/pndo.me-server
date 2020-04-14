@@ -25,6 +25,7 @@ import { UserModel, MetadataModel, FileTimestampModel,
 
 import config from "../res/config.json";
 import { system_usage } from './util/sys-util';
+import { invalidRequest } from './util/errors';
 
 /************************************************
  * ANCHOR setup
@@ -67,7 +68,10 @@ const whitelist = config.whitelist;
 const checkOriginAgainstWhitelist = (ctx: Koa.DefaultContext): string => {
 	const requestOrigin = ctx.accept.headers.origin;
 	if (!whitelist.includes(requestOrigin)) {
-		return ctx.throw(`🙈 ${requestOrigin} is not a valid origin`);
+		ctx.body = `🙈 ${requestOrigin} is not a valid origin`;
+		ctx.status = invalidRequest.status;
+		
+		return JSON.stringify(invalidRequest.message);
 	}
 	return requestOrigin;
 }
