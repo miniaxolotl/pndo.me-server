@@ -30,19 +30,19 @@ export default async (ctx: ParameterizedContext, next: any): Promise<void> => {
 
 	if(authentication) {
 		const token = authentication.split(' ')[1];
-	
+		
 		if(file_data == null) {
 			ctx.status = resourceNotFound.status;
 			ctx.body = resourceNotFound;
 		} else if(file_data.deleted) {
 			ctx.status = resourceNotFound.status;
 			ctx.body = resourceNotFound;
-		} else {
+		} else if (file_data.protected) {
 			if(token == null) {
 				ctx.status = unauthorizedAccess.status;
 				ctx.body = unauthorizedAccess;
 			} else {
-				try{ 
+				try{
 					const authorization = TimedJWT.verify(token, secret);
 
 					if(authorization) {
@@ -74,8 +74,10 @@ export default async (ctx: ParameterizedContext, next: any): Promise<void> => {
 					ctx.body = serverError;
 				}
 			}
+		} else {
+			await next();
 		}
-	} else {
+	} else if (file_data) {
 		if(file_data.protected == true) {
 			ctx.status = unauthorizedAccess.status;
 			ctx.body = unauthorizedAccess;
@@ -85,6 +87,9 @@ export default async (ctx: ParameterizedContext, next: any): Promise<void> => {
 		} else {
 			await next();
 		}
+	} else {
+		ctx.status = resourceNotFound.status;
+		ctx.body = resourceNotFound;
 	}
 };
 
