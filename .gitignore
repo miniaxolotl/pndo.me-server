@@ -1,3 +1,6 @@
+res/public
+res/data
+
 config.json
 build/
 data/
