@@ -10,18 +10,21 @@
 import jwt from 'jsonwebtoken';
 
 import config from "../../res/config.json";
-import { TimedPayload } from '../types.js';
+import { TimedPayload } from 'types';
+
+const default_expire_length =  (10*24*60*60*1000);
 
 /**
  * Sign an object (string) with a specififed secret.
  * @param payload Object to be signed.
  * @param secret Secret to use when signing.
  */
-const sign = (payload: {}, secret: string,
+const sign = (payload: any, secret: string,
 		options?: { expire_length?: number }): string => {
 	const current_time = new Date().getTime();
-	const default_expire_length =  (10*24*60*60*1000) + current_time;
-	let expire_date: number = default_expire_length;
+	const expire_time = current_time + default_expire_length;
+
+	let expire_date: number = expire_time;
 
 	if(options) {
 		expire_date = options.expire_length ?

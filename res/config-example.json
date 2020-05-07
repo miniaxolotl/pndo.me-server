@@ -1,15 +1,20 @@
 {
-	"port": 1234,
+	"public_dir": "public",
+	"port": 8080,
 	"whitelist": [
 		"https://localhost",
 		"http://localhost"
 	],
 	"crypt": {
-		"key": "super-secret-key",
+		"secret": "super-duper-secret",
 		"salt_rounds": 10
 	},
 	"db": {
-		"port": 1234,
-		"url": "mongodb+srv://admin:<password>@mongo-db"
+		"mongo": "mongodb+srv://username:password@0.0.0.0",
+		"mysql": {
+			"url": "0.0.0.0",
+			"username": "username",
+			"password": "password"
+		}
 	}
 }

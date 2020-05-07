@@ -1,7 +1,7 @@
 import * as api from './api';
-import * as authentication from './authentication';
+import auth from './auth.controller';
 
 export {
 	api,
-	authentication,
+	auth,
 };

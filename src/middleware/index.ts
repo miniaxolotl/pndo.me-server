@@ -1,11 +1,7 @@
-import JWTAuthenticate from "./JWTAuthenticate"
-import VerifyFileAuthentication from "./VerifyFileAuthentication"
-import VerifyAdminAuthentication from "./VerifyAdminAuthentication"
-import VerifyIdentity from "./VerifyIdentity"
+import jwtAuthenticate from "./jwt.authenticate"
+import jwtIdentify from "./jwt.identify"
 
 export {
-	JWTAuthenticate,
-	VerifyFileAuthentication,
-	VerifyAdminAuthentication,
-	VerifyIdentity,
+	jwtAuthenticate,
+	jwtIdentify,
 };

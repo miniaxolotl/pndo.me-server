@@ -1,11 +1,7 @@
-import UserController from "./UserController"
-import FileController from "./FileController"
-import MetaController from "./MetaController"
-import CommentController from "./CommentController"
+import UserController from "./user.controller"
+import FileController from "./file.controller"
 
 export {
 	UserController,
 	FileController,
-	MetaController,
-	CommentController,
 };

@@ -6,26 +6,30 @@
         "outDir": "./build",
 		"baseUrl": "./src/",
 
-		/* Strict Type-Checking Options */
+		/* typechecking options */
         "strict": true,
 		"strictPropertyInitialization": true,
 		"noImplicitAny": false,
 
-		/* Module Resolution Options */
+		/* module resolution options */
 		"moduleResolution": "node",
 		"resolveJsonModule": true,
 		"esModuleInterop": true,
 		"isolatedModules": false,
 		"typeRoots" : ["./node_modules/@types", "./lib"],
+		
+		"emitDecoratorMetadata": true,
+		"experimentalDecorators": true,
+
 		"types": [
-			"node"
+			"node",
 		]
     },
 	"exclude": [
 		"node_modules/"
 	],
     "include": [
-		"./lib/**/*.d.ts",
-        "./src/**/*"
+		"src/kove-types.tses.ts",
+        "src/**/*"
     ]
 }
