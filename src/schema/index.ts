@@ -1,7 +1,9 @@
-import * as mongo from "./mongo"
-import * as mysql from "./mysql"
+import LoginSchema from "./login.schema"
+import RegisterSchema from "./register.schema"
+import UploadSchema from "./upload.schema"
 
-export default {
-	mongo,
-	mysql,
+export {
+	LoginSchema,
+	RegisterSchema,
+	UploadSchema,
 };
