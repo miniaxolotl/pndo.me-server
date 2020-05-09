@@ -16,11 +16,10 @@ import validator from "validator";
 import { userNotFound, unauthorizedAccess, actionSuccessful, actionUnsuccessful, serverError } from "../../util/status";
 
 import { ProfileModel } from "../../model/mysql";
-import { ProfileSchema } from "schema/mysql";
+import { LoginSchema, RegisterSchema } from "../../schema";
 
 import { bcrypt, TimedJWT } from "../../util";
 import { ProfileData, AuthResponce } from "types";
-import Schema from "../../schema";
 
 import config from "../../../res/config.json";
 
