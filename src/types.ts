@@ -12,9 +12,10 @@
  ************************************************/
 
 export interface ProfileData {
-	profile_id?: string | null;
+	profile_id: string | null;
 	username: string | null;
 	password?: string;
+	email: string | null;
 	display_name: string | null;
 	admin?: boolean;
 	moderator?: boolean;
