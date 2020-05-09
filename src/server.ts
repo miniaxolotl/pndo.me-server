@@ -25,7 +25,7 @@ import { invalidRequest } from './util/status';
 import * as ModelsMysql from './model/mysql';
 import * as ModelsMongo from './model/mongo';
 
-import { jwtAuthenticate } from './middleware';
+import { jwtAuthenticate, jwtIdentify } from './middleware';
 
 /************************************************
  * ANCHOR setup
@@ -145,7 +145,7 @@ app.use(Body({
 	router.use("/auth", auth.routes());
 
 	{ /* api */
-		router.use("/api/user", jwtAuthenticate, api.UserController.routes());
+		router.use("/api/user", jwtIdentify, api.UserController.routes());
 		router.use("/api/file", api.FileController.routes());
 	}
 
