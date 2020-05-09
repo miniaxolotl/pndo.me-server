@@ -1,6 +1,6 @@
 /**
- * jwt.authenticate.ts
- * Middleware for authenticating timed JWT's
+ * jwt.identigy.ts
+ * Extract the user data from a jwt.
  * Notes:
  * - N/A
  * @author Elias Mawa <elias@emawa.io>
@@ -29,6 +29,7 @@ export default async (ctx: any, next: any): Promise<void> => {
 	const auth_payload: ProfileData = {
 		username: null,
 		display_name: null,
+		profile_id: null,
 		flags: {
 			admin: false,
 			moderator: false,
@@ -48,30 +49,31 @@ export default async (ctx: any, next: any): Promise<void> => {
 			if(authorization) {
 				const payload: ProfileData = authorization.payload;
 
-				const profile_res = await profile_repository
+				const profile_data = await profile_repository
 				.findOne({ username: payload.username! });
 
-				if(profile_res) {
-					auth_payload.username = profile_res.username;
-					auth_payload.display_name = profile_res.display_name;
+				if(profile_data) {
+					auth_payload.username = profile_data.username;
+					auth_payload.display_name = profile_data.display_name;
+					auth_payload.profile_id = profile_data.profile_id;
 					auth_payload.flags = {
-						admin: profile_res.admin,
-						moderator: profile_res.moderator,
-						banned: profile_res.banned,
+						admin: profile_data.admin,
+						moderator: profile_data.moderator,
+						banned: profile_data.banned,
 					};
 
 					ctx.auth = auth_payload;
 				} else {
-					// do nothing
+					ctx.auth = auth_payload;
 				}
 			} else {
-				// do nothing
+				ctx.auth = auth_payload;
 			}
 		} catch(err) {
-			// do nothing
+			ctx.auth = auth_payload;
 		}
 	} else {
-		// do nothing
+		ctx.auth = auth_payload;
 	}
 
 	await next();

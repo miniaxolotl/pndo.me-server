@@ -1,6 +1,6 @@
 /**
  * jwt.authenticate.ts
- * Middleware for authenticating timed JWT's
+ * Verify the user data in a jwt is valid. 
  * Notes:
  * - N/A
  * @author Elias Mawa <elias@emawa.io>
@@ -36,23 +36,24 @@ export default async (ctx: any, next: any): Promise<void> => {
 			const authorization = TimedJWT.verify(token, secret);
 
 			if(authorization) {
-				const payload: ProfileData = authorization.payload;
+				const auth_payload: ProfileData = authorization.payload;
 
-				const profile_res = await profile_repository
-				.findOne({ username: payload.username! });
+				const profile_data = await profile_repository
+				.findOne({ username: auth_payload.username! });
 
-				if(profile_res) {
-					const payload: ProfileData = {
-						username: profile_res.username,
-						display_name: profile_res.display_name,
+				if(profile_data && !profile_data.banned) {
+					const user_auth: ProfileData = {
+						username: profile_data.username,
+						display_name: profile_data.display_name,
+						profile_id: profile_data.profile_id,
 						flags: {
-							admin: profile_res.admin,
-							moderator: profile_res.moderator,
-							banned: profile_res.banned,
+							admin: profile_data.admin,
+							moderator: profile_data.moderator,
+							banned: profile_data.banned,
 						},
 					};
 
-					ctx.auth = payload;
+					ctx.auth = user_auth;
 
 					await next();
 				} else {
