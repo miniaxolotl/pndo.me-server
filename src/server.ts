@@ -15,9 +15,7 @@ import json from 'koa-json'
 import websocket from 'koa-websocket'
 
 import "reflect-metadata";
-import mysql from 'mysql';
 import { createConnection } from "typeorm";
-import mongoose from 'mongoose';
 
 import { auth, api } from "./controller/";
 
@@ -56,6 +54,7 @@ const socket_router = new Router();
 		password: config.db.mongo.password,
 		database: config.db.mongo.schema,
 		entities: [
+			ModelsMongo.FileTimestampModel,
 		],
 		useUnifiedTopology: true,
 		authSource: "admin",
