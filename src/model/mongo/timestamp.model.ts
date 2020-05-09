@@ -8,6 +8,9 @@ export default class FileTimestamp {
 	@Column({type: "varchar", length: 128, unique: false, nullable: false})
 	file_id!: string;
 
-	@Column({type: "date", unique: false, nullable: false, default: Date.now})
+	@Column({type: "varchar", length: 128, unique: false, nullable: true})
+	profile_id!: string;
+
+	@Column({type: "date", default: Date.now})
 	time!: Date;
 }
