@@ -1,6 +1,6 @@
 import joi, { object } from "@hapi/joi";
 
-const ProfileSchema = object({
+const LoginSchema = object({
 	username: joi.string()
 		.alphanum()
 		.lowercase()
@@ -13,10 +13,6 @@ const ProfileSchema = object({
 		.max(128)
 		.required(),
 
-	username_display: joi.string()
-		.alphanum()
-		.min(3)
-		.max(128),
 });
 
-export default ProfileSchema;
+export default LoginSchema;

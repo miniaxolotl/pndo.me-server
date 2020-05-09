@@ -21,7 +21,7 @@ export default class Metadata {
 	type!: string;
 
 	@Column({type: "varchar", nullable: true})
-	owner!: string;
+	profile_id!: string;
 
 	@Column({type: "boolean", nullable: false})
 	protected!: boolean;

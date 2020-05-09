@@ -1,7 +1,9 @@
-import ProfileSchema from "./profile.schema"
+import RegisterSchema from "./register.schema"
+import LoginSchema from "./login.schema"
 import UploadSchema from "./upload.schema"
 
 export {
-	ProfileSchema,
+	RegisterSchema,
+	LoginSchema,
 	UploadSchema,
 };

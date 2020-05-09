@@ -12,7 +12,7 @@
  ************************************************/
 
 export interface ProfileData {
-	profile_id?: string;
+	profile_id?: string | null;
 	username: string | null;
 	password?: string;
 	display_name: string | null;

@@ -11,6 +11,9 @@ export default class Profile {
 	@Column({type: "varchar", length: 128, unique: true, nullable: false})
 	username!: string;
 
+	@Column({type: "varchar", length: 128, unique: true, nullable: false})
+	email!: string;
+
 	@Column({type: "varchar", length: 128, unique: false, nullable: false})
 	password!: string;
 
