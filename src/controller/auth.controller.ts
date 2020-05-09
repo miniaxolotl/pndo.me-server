@@ -13,14 +13,15 @@ import Router from 'koa-router';
 import { Connection } from "typeorm";
 import validator from "validator";
 
+import crypto from "crypto";
 
 import { ProfileModel } from "../model/mysql";
-import { ProfileSchema } from "../schema/mysql";
+import { LoginSchema, RegisterSchema } from "../schema";
 
 import { bcrypt } from "../util";
 import TimedJWT from "../util/timed-jwt";
 
-import { serverError, duplicateUsername, validationError, databaseError, unauthorizedAccess, userNotFound } from "../util/status";
+import { serverError, duplicateUsername, validationError, databaseError, unauthorizedAccess, userNotFound, duplicateEmail } from "../util/status";
 
 import { ProfileData, AuthResponce} from "types";
 import config from "../../res/config.json";
@@ -38,7 +39,7 @@ router.post("/login", async (ctx: ParameterizedContext) => {
 	
 	const profile_repository = db.manager.getRepository(ProfileModel);
 
-	const { value, error } = ProfileSchema.validate(body);
+	const { value, error } = LoginSchema.validate(body);
 
 	if(error) {
 		ctx.status = validationError.status;
@@ -53,7 +54,9 @@ router.post("/login", async (ctx: ParameterizedContext) => {
 			if(await bcrypt.compare(v_profile.password, profile_res.password)) {
 				const payload: ProfileData = {
 					username: profile_res.username,
+					profile_id: profile_res.profile_id,
 					display_name: profile_res.display_name,
+					email: profile_res.email,
 					flags: {
 						admin: profile_res.admin,
 						moderator: profile_res.moderator,
@@ -85,7 +88,7 @@ router.post("/register", async (ctx: ParameterizedContext) => {
 	const body: ProfileData = ctx.request.body;
 	const db: Connection = ctx.mysql;
 
-	const { value, error } = ProfileSchema.validate(body);
+	const { value, error } = RegisterSchema.validate(body);
 
 	if(error) {
 		ctx.status = validationError.status;
@@ -94,6 +97,8 @@ router.post("/register", async (ctx: ParameterizedContext) => {
 		const password_hash: string | null
 		= await bcrypt.gen_hash(validator.escape(body.password!));
 
+		const profile_id = crypto.randomBytes(8).toString('hex');
+
 		if(!password_hash) {
 			ctx.status = serverError.status;
 			ctx.body = serverError.message;
@@ -101,33 +106,46 @@ router.post("/register", async (ctx: ParameterizedContext) => {
 			const v_profile: ProfileData = value;
 			const profile = new ProfileModel();
 			profile.username = body.username!;
+			profile.profile_id = profile_id;
+			profile.email = body.email!;
 			profile.password = password_hash;
 			profile.display_name = v_profile.username!;
 
 			const profile_repo = db.manager.getRepository(ProfileModel);
 
-			const dupeStatus = await profile_repo
+			const dupeUsername = await profile_repo
 			.findOne({ username: body.username! });
 
-			if(dupeStatus) {
+			const dupeEmail = await profile_repo
+			.findOne({ email: body.email! });
+
+			if(dupeEmail && dupeUsername) {
 				ctx.status = duplicateUsername.status;
-				ctx.body = duplicateUsername.message;
+				ctx.body = { duplicate: ["email", "username"] };
+			} else if (dupeUsername) {
+				ctx.status = duplicateUsername.status;
+				ctx.body = { duplicate: ["username"] };
+			} else if (dupeEmail) {
+				ctx.status = duplicateUsername.status;
+				ctx.body = { duplicate: ["email"] };
 			} else {
-				const profile_res = await profile_repo
+				const profile_data = await profile_repo
 				.save(profile)
 				.catch(() => {
 					ctx.status = serverError.status;
 					ctx.body = serverError.message;
 				});
-				
-				if(profile_res) {
+
+				if(profile_data) {
 					const payload: ProfileData = {
-						username: profile_res.username,
-						display_name: profile_res.display_name,
+						username: profile_data.username,
+						profile_id: profile_data.profile_id,
+						display_name: profile_data.display_name,
+						email: profile_data.email,
 						flags: {
-							admin: profile_res.admin,
-							moderator: profile_res.moderator,
-							banned: profile_res.banned,
+							admin: profile_data.admin,
+							moderator: profile_data.moderator,
+							banned: profile_data.banned,
 						},
 					};
 					
