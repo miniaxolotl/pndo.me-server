@@ -26,6 +26,7 @@ import * as ModelsMysql from './model/mysql';
 import * as ModelsMongo from './model/mongo';
 
 import { jwtAuthenticate, jwtIdentify } from './middleware';
+import { system_usage } from './util/sys-util';
 
 /************************************************
  * ANCHOR setup
@@ -147,12 +148,37 @@ app.use(Body({
 	{ /* api */
 		router.use("/api/user", jwtIdentify, api.UserController.routes());
 		router.use("/api/file", api.FileController.routes());
+		router.use("/api/meta", api.MetaController.routes());
 	}
 
 	app.use(router.routes());
 }
 
 { /* WEBSOCKET */
+	const sleep = (ms) => {
+		return new Promise((resolve) => {
+		  setTimeout(resolve, ms);
+		});
+	  }   
+
+	{
+		socket_router.all('/meta/usage', async (ctx: any) => {
+
+			while(true) { 
+				const usage_data = await system_usage();
+				const payload = {
+					memory_usage: usage_data.memory_usage,
+					cpu_usage: usage_data.cpu_usage,
+					disk_usage: usage_data.disk_usage,
+				};
+
+				ctx.websocket.send(JSON.stringify(payload));
+				
+				  await sleep(1000);
+			}
+		});
+	}
+
 	app.ws.use(socket_router.routes() as any);
 }
 

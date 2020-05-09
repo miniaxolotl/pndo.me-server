@@ -36,6 +36,11 @@ export const userNotFound: StatusMessage = {
 };
 /*** 5xx ***/
 
+export const noContent: StatusMessage = {
+	status: 500,
+	message: "Server Error: No content to serve.",
+};
+
 export const serverError: StatusMessage = {
 	status: 500,
 	message: "Server Error: Unexpected server malfuntion.",
@@ -63,7 +68,6 @@ export const invalidForm: StatusMessage = {
 	status: 400,
 	message: "Invalid form data.",
 };
-
 
 export const duplicateUsername: StatusMessage = {
 	status: 409,
