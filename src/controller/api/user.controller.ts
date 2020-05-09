@@ -60,75 +60,81 @@ router.patch("/:username", async (ctx: ParameterizedContext) => {
 	const body: any = ctx.request.body;
 	const db: Connection = ctx.mysql;
 	
-	const { value, error } = ProfileUpdateSchema.validate(body);
-	
-	const profile_repository = db.manager.getRepository(ProfileModel);
+	if(ctx.auth.username == ctx.params.username) {
+		const { value, error } = ProfileUpdateSchema.validate(body);
+		
+		const profile_repository = db.manager.getRepository(ProfileModel);
 
-	if(error) {
-		ctx.status = validationError.status;
-		ctx.body = validationError.message;
-	} else {
-		const profile = await profile_repository
-		.findOne({ username: ctx.params.username });
+		if(error) {
+			ctx.status = validationError.status;
+			ctx.body = validationError.message;
+		} else {
 
-		let password_hash: string | null | undefined = undefined;
-		if(value.password) {
-			password_hash
-			= await bcrypt.gen_hash(validator.escape(body.password!));
-			if(!password_hash) {
-				password_hash = undefined;
+			const profile = await profile_repository
+			.findOne({ username: ctx.params.username });
+
+			let password_hash: string | null | undefined = undefined;
+			if(value.password) {
+				password_hash
+				= await bcrypt.gen_hash(validator.escape(body.password!));
+				if(!password_hash) {
+					password_hash = undefined;
+				}
+			}
+
+			if(profile) {
+				const profile_update = new ProfileModel();
+				profile_update.id = profile?.id!;
+				profile_update.password = password_hash!;
+				profile_update.display_name 
+				= value.display_name 
+				&& value.display_name.toLowerCase() == profile.username
+				? value.display_name : undefined;
+				profile_update.email = profile?.email!;
+				
+				const profile_res = await profile_repository
+				.save(profile_update)
+				.catch((err) => {
+					console.log(err);
+				});
+			} else {
+				ctx.status = actionUnsuccessful.status;
+				ctx.body = actionUnsuccessful.message;
 			}
 		}
 
-		if(profile) {
-			const profile_update = new ProfileModel();
-			profile_update.id = profile?.id!;
-			profile_update.password = password_hash!;
-			profile_update.display_name 
-			= value.display_name 
-			&& value.display_name.toLowerCase() == profile.username
-			? value.display_name : undefined;
-			profile_update.email = profile?.email!;
+		const profile_data = await profile_repository
+		.findOne({ username: ctx.params.username });
+
+		if(profile_data) {
+			const payload: ProfileData = {
+				username: profile_data.username,
+				profile_id: profile_data.profile_id,
+				display_name: profile_data.display_name,
+				email: profile_data.email,
+				flags: {
+					admin: profile_data.admin,
+					moderator: profile_data.moderator,
+					banned: profile_data.banned,
+				},
+			};
 			
-			const profile_res = await profile_repository
-			.save(profile_update)
-			.catch((err) => {
-				console.log(err);
-			});
+			const token
+			= TimedJWT.sign(payload, config.crypt.secret);
+			
+			const res: AuthResponce = {
+				payload,
+				authorization: token,
+			};
+			
+			ctx.body = res;
 		} else {
 			ctx.status = actionUnsuccessful.status;
 			ctx.body = actionUnsuccessful.message;
 		}
-	}
-
-	const profile_data = await profile_repository
-	.findOne({ username: ctx.params.username });
-
-	if(profile_data) {
-		const payload: ProfileData = {
-			username: profile_data.username,
-			profile_id: profile_data.profile_id,
-			display_name: profile_data.display_name,
-			email: profile_data.email,
-			flags: {
-				admin: profile_data.admin,
-				moderator: profile_data.moderator,
-				banned: profile_data.banned,
-			},
-		};
-		
-		const token
-		= TimedJWT.sign(payload, config.crypt.secret);
-		
-		const res: AuthResponce = {
-			payload,
-			authorization: token,
-		};
-		
-		ctx.body = res;
 	} else {
-		ctx.status = actionUnsuccessful.status;
-		ctx.body = actionUnsuccessful.message;
+		ctx.status = unauthorizedAccess.status;
+		ctx.body = unauthorizedAccess.message;
 	}
 });
 
