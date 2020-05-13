@@ -111,7 +111,6 @@ router.patch("/:username", async (ctx: ParameterizedContext) => {
 				username: profile_data.username,
 				profile_id: profile_data.profile_id,
 				display_name: profile_data.display_name,
-				email: profile_data.email,
 				flags: {
 					admin: profile_data.admin,
 					moderator: profile_data.moderator,

@@ -56,7 +56,6 @@ router.post("/login", async (ctx: ParameterizedContext) => {
 					username: profile_res.username,
 					profile_id: profile_res.profile_id,
 					display_name: profile_res.display_name,
-					email: profile_res.email,
 					flags: {
 						admin: profile_res.admin,
 						moderator: profile_res.moderator,
@@ -107,7 +106,6 @@ router.post("/register", async (ctx: ParameterizedContext) => {
 			const profile = new ProfileModel();
 			profile.username = body.username!;
 			profile.profile_id = profile_id;
-			profile.email = body.email!;
 			profile.password = password_hash;
 			profile.display_name = v_profile.username!;
 
@@ -116,18 +114,9 @@ router.post("/register", async (ctx: ParameterizedContext) => {
 			const dupeUsername = await profile_repo
 			.findOne({ username: body.username! });
 
-			const dupeEmail = await profile_repo
-			.findOne({ email: body.email! });
-
-			if(dupeEmail && dupeUsername) {
-				ctx.status = duplicateUsername.status;
-				ctx.body = { duplicate: ["email", "username"] };
-			} else if (dupeUsername) {
+			if(dupeUsername) {
 				ctx.status = duplicateUsername.status;
 				ctx.body = { duplicate: ["username"] };
-			} else if (dupeEmail) {
-				ctx.status = duplicateUsername.status;
-				ctx.body = { duplicate: ["email"] };
 			} else {
 				const profile_data = await profile_repo
 				.save(profile)
@@ -141,7 +130,6 @@ router.post("/register", async (ctx: ParameterizedContext) => {
 						username: profile_data.username,
 						profile_id: profile_data.profile_id,
 						display_name: profile_data.display_name,
-						email: profile_data.email,
 						flags: {
 							admin: profile_data.admin,
 							moderator: profile_data.moderator,

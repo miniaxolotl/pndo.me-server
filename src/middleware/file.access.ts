@@ -30,7 +30,6 @@ export default async (ctx: any, next: any): Promise<void> => {
 		username: null,
 		display_name: null,
 		profile_id: null,
-		email: null,
 		flags: {
 			admin: false,
 			moderator: false,
@@ -62,7 +61,6 @@ export default async (ctx: any, next: any): Promise<void> => {
 					auth_payload.username = profile_data.username;
 					auth_payload.display_name = profile_data.display_name;
 					auth_payload.profile_id = profile_data.profile_id;
-					auth_payload.email = profile_data.email;
 					auth_payload.flags = {
 						admin: profile_data.admin,
 						moderator: profile_data.moderator,

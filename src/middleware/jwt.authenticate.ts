@@ -46,7 +46,6 @@ export default async (ctx: any, next: any): Promise<void> => {
 						username: profile_data.username,
 						display_name: profile_data.display_name,
 						profile_id: profile_data.profile_id,
-						email: profile_data.email,
 						flags: {
 							admin: profile_data.admin,
 							moderator: profile_data.moderator,
