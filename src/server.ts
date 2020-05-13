@@ -81,6 +81,7 @@ const socket_router = new Router();
 		entities: [
 			ModelsMysql.ProfileModel,
 			ModelsMysql.MetadataModel,
+			ModelsMysql.CommentModel,
 		],
 		synchronize: true,
 	}).then((connection) => {
@@ -147,6 +148,7 @@ app.use(Body({
 
 	{ /* api */
 		router.use("/api/user", jwtIdentify, api.UserController.routes());
+		router.use("/api/comment", jwtIdentify, api.CommentController.routes());
 		router.use("/api/file", api.FileController.routes());
 		router.use("/api/meta", api.MetaController.routes());
 	}
