@@ -25,10 +25,20 @@ router.all("/filestats", async (ctx: ParameterizedContext) => {
 	const count = await file_repo.count();
 	const bytes = await file_repo.createQueryBuilder()
 		.select("SUM(bytes)", "sum").getRawOne();
+	const latest = await file_repo.findOne({
+		protected: false,
+		hidden: false,
+	},{
+		order: {
+			uploaded: "DESC"
+		},
+		select: [ "filename", "bytes", "uploaded", "file_id"]
+	});
 
 	ctx.body = {
 		count: count,
-		bytes: bytes.sum
+		bytes: bytes.sum,
+		latest,
 	}
 });
 
@@ -39,9 +49,16 @@ router.all("/userstats", async (ctx: ParameterizedContext) => {
 	const profile_repo = db.manager.getRepository(ProfileModel);
 
 	const count = await profile_repo.count();
+	const latest = await profile_repo.findOne({
+		order: {
+			id: "DESC"
+		},
+		select: [ "display_name" ]
+	});
 	
 	ctx.body = {
 		count: count,
+		latest
 	}
 });
 
