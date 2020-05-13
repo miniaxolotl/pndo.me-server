@@ -56,7 +56,7 @@ export default async (ctx: any, next: any): Promise<void> => {
 				const payload: ProfileData = authorization.payload;
 
 				const profile_data = await profile_repo
-				.findOne({ username: payload.username! });
+				.findOne({ profile_id: payload.profile_id! });
 
 				if(profile_data) {
 					auth_payload.username = profile_data.username;
@@ -94,13 +94,15 @@ export default async (ctx: any, next: any): Promise<void> => {
 				ctx.body = serverError.message;
 			}
 		} catch(err) {
-			ctx.status = serverError.status;
-			ctx.body = serverError.message;
+			if(file_data.protected) {
+				ctx.status = serverError.status;
+				ctx.body = serverError.message;
+			} else {
+				await next();
+			}
 		}
 	} else if (file_data) {
 		if(file_data.protected) {
-			console.log("ads");
-			
 			ctx.status = unauthorizedAccess.status;
 			ctx.body = unauthorizedAccess.message;
 		} else {
