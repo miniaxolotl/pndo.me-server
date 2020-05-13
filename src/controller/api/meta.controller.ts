@@ -23,6 +23,10 @@ router.all("/filestats", async (ctx: ParameterizedContext) => {
 	const file_repo = db.manager.getRepository(MetadataModel);
 	
 	const count = await file_repo.count();
+	// const private_count = await file_repo.findAndCount({
+	// 	protected: true,
+	// })
+
 	const bytes = await file_repo.createQueryBuilder()
 		.select("SUM(bytes)", "sum").getRawOne();
 	const latest = await file_repo.findOne({
@@ -37,6 +41,7 @@ router.all("/filestats", async (ctx: ParameterizedContext) => {
 
 	ctx.body = {
 		count: count,
+		// private_count: private_count[1],
 		bytes: bytes.sum,
 		latest,
 	}
