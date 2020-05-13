@@ -1,4 +1,4 @@
-import {Entity, Column, PrimaryGeneratedColumn} from "typeorm";
+import {Entity, Column, PrimaryGeneratedColumn, CreateDateColumn} from "typeorm";
 
 @Entity()
 export default class FileTimestamp {
@@ -11,6 +11,6 @@ export default class FileTimestamp {
 	@Column({type: "varchar", length: 128, unique: false, nullable: true})
 	profile_id!: string;
 
-	@Column({type: "date", default: Date.now})
+	@CreateDateColumn()
 	time!: Date;
 }

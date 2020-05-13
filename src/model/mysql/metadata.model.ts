@@ -1,4 +1,4 @@
-import {Entity, Column, PrimaryGeneratedColumn} from "typeorm";
+import {Entity, Column, PrimaryGeneratedColumn, CreateDateColumn} from "typeorm";
 
 @Entity()
 export default class Metadata {
@@ -38,7 +38,7 @@ export default class Metadata {
 	@Column({type: "int", nullable: false})
 	bytes!: number;
 
-	@Column({type: "date", nullable: true})
+	@CreateDateColumn()
 	uploaded?: Date;
 
 	@Column({type: "date", nullable: true})
