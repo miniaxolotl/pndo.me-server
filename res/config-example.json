@@ -1,5 +1,6 @@
 {
-	"public_dir": "public",
+	"public_dir": "./res/public",
+	"data_dir": "./res/data",
 	"port": 8080,
 	"whitelist": [
 		"https://localhost",
@@ -10,9 +11,18 @@
 		"salt_rounds": 10
 	},
 	"db": {
-		"mongo": "mongodb+srv://username:password@0.0.0.0",
+		"mongo": {
+			"url": "0.0.0.0",
+			"port": 3306,
+			"schema": "pandome",
+			"authSource": "auth_db",
+			"username": "username",
+			"password": "password"
+		},
 		"mysql": {
 			"url": "0.0.0.0",
+			"port": 3306,
+			"schema": "pandome",
 			"username": "username",
 			"password": "password"
 		}
