@@ -85,12 +85,12 @@ router.patch("/:username", async (ctx: ParameterizedContext) => {
 			if(profile) {
 				const profile_update = new ProfileModel();
 				profile_update.id = profile?.id!;
-				profile_update.password = password_hash!;
+				// profile_update.password = password_hash!;
 				profile_update.display_name 
 				= value.display_name 
 				&& value.display_name.toLowerCase() == profile.username
 				? value.display_name : undefined;
-				profile_update.email = profile?.email!;
+				// profile_update.email = profile?.email!;
 				
 				const profile_res = await profile_repository
 				.save(profile_update)
