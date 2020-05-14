@@ -9,6 +9,7 @@
 		"watch": "nodemon --watch 'src/**/*' -e ts,tsx --exec ts-node ./src/server.ts",
 		"dev": "ts-node ./src/server.ts",
 		"build": "tsc",
+		"start": "node build/server.js",
 		"lint": "eslint . --ext .ts,.tsx"
 	},
 	"dependencies": {
