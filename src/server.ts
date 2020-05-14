@@ -153,6 +153,8 @@ app.use(Body({
 		router.use("/api/meta", api.MetaController.routes());
 	}
 
+	router.use("/f", api.FileController.routes());
+
 	app.use(router.routes());
 }
 
