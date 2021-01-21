@@ -33,7 +33,7 @@
 		"reflect-metadata": "^0.1.13",
 		"sanitize": "^2.1.0",
 		"sequelize": "^5.21.7",
-		"socket.io": "^2.3.0",
+		"socket.io": "^2.4.0",
 		"typeorm": "^0.2.24",
 		"validator": "^13.0.0"
 	},
