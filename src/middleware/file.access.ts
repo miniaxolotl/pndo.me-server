@@ -28,6 +28,7 @@ export default async (ctx: any, next: any): Promise<void> => {
 		username: null,
 		email: null,
 		user_id: null,
+		admin: null
 	};
 
 	const db: Connection = ctx.mysql;
@@ -52,6 +53,7 @@ export default async (ctx: any, next: any): Promise<void> => {
 						username: user.username,
 						email: user.email,
 						user_id: user.user_id,
+						admin: user.admin,
 					};
 
 					if(file.protected) {

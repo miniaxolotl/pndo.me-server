@@ -78,6 +78,7 @@ router.post("/register", async (ctx: ParameterizedContext, next) => {
 						username: user_data.username,
 						email: user_data.email,
 						user_id: user_data.user_id,
+						admin: user_data.admin
 					};
 
 					const token = TimedJWT.sign(payload, config.crypt.secret);
@@ -124,6 +125,7 @@ router.post("/login", async (ctx: ParameterizedContext) => {
 					username: user.username,
 					email: user.email,
 					user_id: user.user_id,
+					admin: user.admin
 				};
 				
 				const token = TimedJWT.sign(payload, config.crypt.secret);

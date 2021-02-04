@@ -16,7 +16,7 @@ export interface UserData {
 	username: string | null;
 	password?: string;
 	email: string | null;
-	admin?: boolean;
+	admin: boolean | null;
 	moderator?: boolean;
 }
 

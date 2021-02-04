@@ -28,6 +28,7 @@ export default async (ctx: any, next: any): Promise<void> => {
 		username: null,
 		email: null,
 		user_id: null,
+		admin: null
 	};
 
 	if(authorization_key) {
@@ -48,6 +49,7 @@ export default async (ctx: any, next: any): Promise<void> => {
 						username: user.username,
 						email: user.email,
 						user_id: user.user_id,
+						admin: user.admin
 					};
 
 					ctx.state = state;
