@@ -133,7 +133,7 @@ app.use(Body({
 		router.use("/api/file", api.FileController.routes());
 		router.use("/api/stream", api.StreamController.routes());
 		router.use("/api/info", api.InfoController.routes());
-		// router.use("/api/meta", api.MetaController.routes());
+		router.use("/api/meta", api.MetaController.routes());
 	}
 
 	app.use(router.routes());
