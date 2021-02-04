@@ -11,7 +11,7 @@ import Koa from 'koa';
 
 import CORS from '@koa/cors';
 import Router from 'koa-router';
-import BodyParser from 'koa-bodyparser';
+import Body from 'koa-body';
 import KoaJSON from 'koa-json';
 import websockify from 'koa-websocket'
 
@@ -108,10 +108,10 @@ app.use(CORS({origin: "*"}));
 
 app.use(KoaJSON({ pretty: false, param: 'pretty' }));
 
-app.use(BodyParser({
-	// formidable: { maxFileSize: 2**32, uploadDir: config.data_dir },
-    // multipart: true,
-	// urlencoded: true,
+app.use(Body({
+	formidable: { maxFileSize: 2**32, uploadDir: config.data_dir },
+    multipart: true,
+	urlencoded: true,
 }));
 
 /************************************************

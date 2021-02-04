@@ -40,28 +40,6 @@ router.post("/", jwt.identify, async (ctx: ParameterizedContext) => {
 	const body: UploadRequest = ctx.request.body;
 	const db: Connection = ctx.mysql;
 	
-	// ! TODO Make this into a middleware
-	const options: any = {
-		uploadDir: config.data_dir,
-		maxFileSize: ctx.state.admin ? 2**32 : (2**20)*250,
-		multiples: false
-	}
-
-	const form = new IncomingForm(options);
-
-	const file: File = await new Promise((res, rej) => {
-		form.parse(ctx.req, (err, fields, files) => {
-			res(files.file as File);
-		});
-	});
-
-	if((form.bytesExpected > (2**20)*250) && !ctx.state.admin) {
-		ctx.status = 400;
-		ctx.body = "File is too large (must be >250MB)";
-		return;
-	}
-	// !^^^
-	
 	const file_collection = db.manager.getRepository(MetadataModel);
 
 	const { error } = UploadSchema.validate(body, {
@@ -76,7 +54,12 @@ router.post("/", jwt.identify, async (ctx: ParameterizedContext) => {
 				ctx.body.invalid.push(e.context.key);
 		});
 	} else {
-		// const file: any = (ctx.request as any).files.file;
+		const file: File = (ctx.request as any).files.file;
+		if((file.size > (2**20)*250) && !ctx.state.admin) {
+			ctx.status = 400;
+			ctx.body = "File is too large (must be >250MB)";
+			return;
+		}
 		const file_id = crypto.randomBytes(8).toString('hex');
 	
 		const tmp_path = file.path;
