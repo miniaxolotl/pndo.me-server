@@ -41,6 +41,9 @@ export default class Metadata {
 	@CreateDateColumn()
 	create_date?: Date;
 
-	@Column({type: "date", nullable: true})
+	@Column({type: "date", default: null})
 	expire_date!: Date;
+
+	@Column({type: "boolean", nullable: false, default: false})
+	deleted!: boolean;
 }
