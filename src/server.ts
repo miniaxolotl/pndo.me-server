@@ -8,24 +8,22 @@
  */
 
 import Koa from 'koa';
-import cors from '@koa/cors';
+
+import CORS from '@koa/cors';
 import Router from 'koa-router';
 import Body from 'koa-body';
-import json from 'koa-json'
-import websocket from 'koa-websocket'
+import KoaJSON from 'koa-json';
+import websockify from 'koa-websocket'
 
-import "reflect-metadata";
 import { createConnection } from "typeorm";
-
-import { auth, api } from "./controller/";
-
-import config from "../res/config.json";
-import { invalidRequest } from './util/status';
-
 import * as ModelsMysql from './model/mysql';
 import * as ModelsMongo from './model/mongo';
 
-import { jwtAuthenticate, jwtIdentify } from './middleware';
+import { api, authentication } from "./controller";
+import { jwt }  from "./middleware";
+
+import config from "../res/config.json";
+
 import { system_usage } from './util/sys-util';
 
 /************************************************
@@ -35,7 +33,7 @@ import { system_usage } from './util/sys-util';
 const koaApp: Koa = new Koa();
 
 const wsOptions = {};
-const app = websocket(koaApp, wsOptions);
+const app = websockify(koaApp as any, wsOptions);
 
 const router: Router = new Router();
 const socket_router = new Router();
@@ -59,9 +57,9 @@ const socket_router = new Router();
 		],
 		useUnifiedTopology: true,
 		authSource: "admin",
-		synchronize: true,
+		synchronize: !config.production,
 	}).then((connection) => {
-		app.context.mongo = connection;
+		(app.context as any).mongo = connection;
 		console.log("connected to database: mongodb");
 	}).catch((error) => {
 		console.log(error);
@@ -83,9 +81,9 @@ const socket_router = new Router();
 			ModelsMysql.MetadataModel,
 			ModelsMysql.CommentModel,
 		],
-		synchronize: true,
+		synchronize: !config.production,
 	}).then((connection) => {
-		app.context.mysql = connection;
+		(app.context as any).mysql = connection;
 		console.log("connected to database: mysql");
 	}).catch((error) => {
 		console.log(error);
@@ -102,30 +100,13 @@ const socket_router = new Router();
  * ANCHOR cors
  ************************************************/
 
-const whitelist = config.whitelist;
-
-const checkOriginAgainstWhitelist = (ctx: Koa.DefaultContext): string => {
-	const requestOrigin = ctx.accept.headers.origin;
-	if (!whitelist.includes(requestOrigin)) {
-		ctx.body = `🙈 ${requestOrigin} is not a valid origin`;
-		ctx.status = invalidRequest.status;
-		
-		return JSON.stringify(invalidRequest.message);
-	}
-	return requestOrigin;
-}
-
-app.use(cors({
-	origin: checkOriginAgainstWhitelist,
-	credentials: true,
-	allowMethods: [ 'post', 'get', 'put', 'patch', 'delete' ],
-}));
+app.use(CORS({origin: "*"}));
 
 /************************************************
  * ANCHOR middleware
  ************************************************/
 
-app.use(json({ pretty: false, param: 'pretty' }));
+app.use(KoaJSON({ pretty: false, param: 'pretty' }));
 
 app.use(Body({
 	formidable: { maxFileSize: 2**32, uploadDir: config.data_dir },
@@ -137,29 +118,27 @@ app.use(Body({
  * ANCHOR auth
  ************************************************/
 
- app.context.auth = {};
+ (app.context as any).state = {};
  
 /************************************************
  * ANCHOR routes
  ************************************************/
   
 { /* HTTP */
-	router.use("/auth", auth.routes());
+	router.use("/auth", authentication.routes());
 
 	{ /* api */
-		router.use("/api/user", jwtIdentify, api.UserController.routes());
-		router.use("/api/comment", jwtIdentify, api.CommentController.routes());
-		router.use("/api/file", api.FileController.routes());
-		router.use("/api/meta", api.MetaController.routes());
+		// router.use("/api/user", jwt.authenticate, api.UserController.routes());
+		// router.use("/api/comment", jwt.identify, api.CommentController.routes());
+		// router.use("/api/file", api.FileController.routes());
+		// router.use("/api/meta", api.MetaController.routes());
 	}
-
-	router.use("/f", api.FileController.routes());
 
 	app.use(router.routes());
 }
 
 { /* WEBSOCKET */
-	const sleep = (ms) => {
+	const sleep = (ms: number) => {
 		return new Promise((resolve) => {
 		  setTimeout(resolve, ms);
 		});
