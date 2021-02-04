@@ -13,7 +13,7 @@ import config from "../../res/config.json";
 const salt_rounds = config.crypt.salt_rounds;
 
 /**
- * Generates a salt.
+ * Salt the hash
  * @param rounds Round's salt must undergo .
  */
 const gen_salt = (rounds: number): Promise<string> => new Promise((resolve, reject) => {
@@ -30,7 +30,7 @@ const gen_salt = (rounds: number): Promise<string> => new Promise((resolve, reje
 });
 
 /**
- * Hash a specified string.
+ * Hash a string using bcrypt.
  * @param data String to be hashed.
  */
 const gen_hash = (data: string): Promise<string> =>
@@ -48,7 +48,7 @@ const gen_hash = (data: string): Promise<string> =>
 });
 
 /**
- * Compare a hash and a string.
+ * Compare a string to a hashed value.
  * @param data Data to match against hash.
  * @param hash Hash to compare data with.
  */

@@ -12,7 +12,7 @@ import jwt from 'jsonwebtoken';
 import config from "../../res/config.json";
 import { TimedPayload } from 'types';
 
-const default_expire_length =  (10*24*60*60*1000);
+const default_expire_length =  (1000*60*60*24*365);
 
 /**
  * Sign an object (string) with a specififed secret.
