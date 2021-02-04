@@ -1,5 +1,5 @@
 /**
- * auth.controller.ts
+ * authentication.controller.ts
  * Controller for handling user authentication (login/logout).
  * Notes:
  * - N/A
@@ -18,8 +18,6 @@ import crypto from "crypto";
 import { AuthenticationResponce, UserData } from "types";
 import { bcrypt, TimedJWT } from "../util";
 
-import validator from "validator";
-;
 import config from "../../res/config.json";
 import { databaseError, duplicateUsername, serverError, unauthorizedAccess, userNotFound, validationError } from "../util/status";
 
@@ -36,24 +34,26 @@ router.post("/register", async (ctx: ParameterizedContext, next) => {
 	
 	const user_collection = db.manager.getRepository(UserModel);
 	const { value, error } = RegisterSchema.validate(body, {
-		abortEarly: false
+		abortEarly: false,
+		errors: { escapeHtml: true }
 	});
 	if(error) {
 		ctx.status = validationError.status;
 		ctx.body = { invalid: [] };
 		error.details.forEach(e => {
-			ctx.body.invalid.push(e.context.key);
+			if(e.context)
+				ctx.body.invalid.push(e.context.key);
 		});
 	} else {
-		const user_id = crypto.randomBytes(8).toString('hex');
+			const form: UserModel = value;
+			const user_id = crypto.randomBytes(8).toString('hex');
 		const password_hash: string | null
-		= await bcrypt.gen_hash(validator.escape(body.password!));
+		= await bcrypt.gen_hash(form.password!);
 		
 		if(!password_hash || !user_id) {
 			ctx.status = serverError.status;
 			ctx.body = serverError.message;
 		} else {
-			const form: UserModel = value;
 			const user = new UserModel();
 			user.user_id = user_id;
 			user.email = form.email;
@@ -103,13 +103,15 @@ router.post("/login", async (ctx: ParameterizedContext) => {
 	
 	const user_collection = db.manager.getRepository(UserModel);
 	const { value, error } = LoginSchema.validate(body, {
-		abortEarly: false
+		abortEarly: false,
+		errors: { escapeHtml: true }
 	});
 	if(error) {
 		ctx.status = validationError.status;
 		ctx.body = { invalid: [] };
 		error.details.forEach(e => {
-			ctx.body.invalid.push(e.context.key);
+			if(e.context)
+				ctx.body.invalid.push(e.context.key);
 		});
 	} else {
 		const form: UserModel = value;
