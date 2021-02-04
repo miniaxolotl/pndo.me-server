@@ -1,7 +1,8 @@
 import joi, { object } from "@hapi/joi";
 
 const RegisterSchema = object({
-	email: joi.email({ tlds: { allow: true } })
+	email: joi.string()
+		.email({ tlds: { allow: true } })
 		.required(),
 		
 	username: joi.string()

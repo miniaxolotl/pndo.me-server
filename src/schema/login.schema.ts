@@ -1,7 +1,8 @@
 import joi, { object } from "@hapi/joi";
 
 const LoginSchema = object({
-	email: joi.email({ tlds: { allow: true } })
+	email: joi.string()
+		.email({ tlds: { allow: true } })
 		.required(),
 
 	password: joi.string()
