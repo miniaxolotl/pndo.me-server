@@ -1,6 +1,6 @@
 import {Entity, Column, PrimaryGeneratedColumn, CreateDateColumn} from "typeorm";
 
-@Entity()
+@Entity("file.timestamp")
 export default class FileTimestamp {
 	@PrimaryGeneratedColumn()
 	id!: number;
