@@ -9,7 +9,7 @@ export default class FileTimestamp {
 	file_id!: string;
 
 	@Column({type: "varchar", length: 16, unique: false, nullable: true})
-	profile_id!: string;
+	user_id!: string;
 
 	@CreateDateColumn()
 	date!: Date;

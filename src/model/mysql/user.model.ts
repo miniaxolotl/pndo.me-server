@@ -6,7 +6,7 @@ export default class Profile {
 	id!: number;
 
 	@Column({type: "varchar", length: 16, unique: true, nullable: false})
-	profile_id!: string;
+	user_id!: string;
 
 	@Column({type: "varchar", length: 32, unique: true, nullable: false})
 	username!: string;

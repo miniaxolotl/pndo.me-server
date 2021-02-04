@@ -79,7 +79,7 @@ const socket_router = new Router();
 		password: config.db.mysql.password,
 		database: config.db.mysql.schema,
 		entities: [
-			ModelsMysql.ProfileModel,
+			ModelsMysql.UserModel,
 			ModelsMysql.MetadataModel,
 			ModelsMysql.CommentModel,
 		],

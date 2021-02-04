@@ -9,7 +9,7 @@ export default class Comment {
 	file_id!: string;
 
 	@Column({type: "varchar", length: 16, unique: false, nullable: true})
-	profile_id!: string;
+	user_id!: string;
 
 	@Column({type: "text", nullable: false})
 	message!: string;

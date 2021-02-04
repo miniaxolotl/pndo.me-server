@@ -1,6 +1,6 @@
 import joi, { object } from "@hapi/joi";
 
-const ProfileUpdateSchema = object({
+const UserUpdateSchema = object({
 	email: joi.email({ tlds: { allow: true } })
 		.required(),
 		
@@ -14,4 +14,4 @@ const ProfileUpdateSchema = object({
 		.max(32),
 });
 
-export default ProfileUpdateSchema;
+export default UserUpdateSchema;

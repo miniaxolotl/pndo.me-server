@@ -1,13 +1,13 @@
 import LoginSchema from "./login.schema"
 import RegisterSchema from "./register.schema"
 
-import ProfileUpdateSchema from "./profile.update.schema"
+import UserUpdateSchema from "./user.update.schema"
 
 import UploadSchema from "./upload.schema"
 
 export {
 	LoginSchema,
 	RegisterSchema,
-	ProfileUpdateSchema,
+	UserUpdateSchema,
 	UploadSchema,
 };
