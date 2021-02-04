@@ -130,7 +130,9 @@ app.use(Body({
 	{ /* api */
 		// router.use("/api/user", jwt.authenticate, api.UserController.routes());
 		// router.use("/api/comment", jwt.identify, api.CommentController.routes());
-		// router.use("/api/file", api.FileController.routes());
+		router.use("/api/file", api.FileController.routes());
+		router.use("/api/stream", api.StreamController.routes());
+		router.use("/api/info", api.InfoController.routes());
 		// router.use("/api/meta", api.MetaController.routes());
 	}
 
