@@ -1,14 +1,15 @@
 {
+	"port": 8080,
+	"production": false,
 	"public_dir": "./res/public",
 	"data_dir": "./res/data",
-	"port": 8080,
 	"whitelist": [
 		"https://localhost",
 		"http://localhost"
 	],
 	"crypt": {
 		"secret": "super-duper-secret",
-		"salt_rounds": 10
+		"salt_rounds": 7
 	},
 	"db": {
 		"mongo": {
