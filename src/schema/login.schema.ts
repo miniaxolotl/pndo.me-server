@@ -1,4 +1,4 @@
-import joi, { object } from "@hapi/joi";
+import joi, { object } from "joi";
 
 const LoginSchema = object({
 	email: joi.string()
