@@ -11,22 +11,14 @@
  * ANCHOR user authentication
  ************************************************/
 
-export interface ProfileData {
-	profile_id: string | null;
+export interface UserData {
+	user_id: string | null;
 	username: string | null;
 	password?: string;
-	display_name: string | null;
+	email: string | null;
 	admin?: boolean;
 	moderator?: boolean;
-	banned?: boolean;
-	flags?: ProfileFlags;
 }
-
-export type ProfileFlags = {
-	admin: boolean;
-	moderator: boolean;
-	banned: boolean;
-};
 
 export interface TimedPayload {
 	payload: any;
@@ -34,8 +26,8 @@ export interface TimedPayload {
 	createdOn: number;
 }
 
-export interface AuthResponce {
-	payload: ProfileData;
+export interface AuthenticationResponce {
+	payload: UserData;
 	authorization: string;
 }
 
@@ -55,7 +47,7 @@ export interface Metadata {
 	md5: string;
 	filename:  string;
 	type: string;
-	owner?: string | null;
+	user_id?: string | null;
 	deleted?: boolean;
 	protected?: boolean;
 	hidden: boolean;

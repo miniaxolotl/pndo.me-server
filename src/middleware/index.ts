@@ -1,9 +1,5 @@
-import jwtAuthenticate from "./jwt.authenticate"
-import jwtIdentify from "./jwt.identify"
-import fileAccess from "./file.access"
+import * as jwt from "./jwt"
 
 export {
-	jwtAuthenticate,
-	jwtIdentify,
-	fileAccess,
+	jwt,
 };
