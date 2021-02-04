@@ -39,8 +39,8 @@ export default class Metadata {
 	bytes!: number;
 
 	@CreateDateColumn()
-	uploaded?: Date;
+	create_date?: Date;
 
 	@Column({type: "date", nullable: true})
-	expires!: Date;
+	expire_date!: Date;
 }

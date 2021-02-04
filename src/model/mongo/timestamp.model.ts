@@ -5,12 +5,12 @@ export default class FileTimestamp {
 	@PrimaryGeneratedColumn()
 	id!: number;
 
-	@Column({type: "varchar", length: 128, unique: false, nullable: false})
+	@Column({type: "varchar", length: 16, unique: false, nullable: false})
 	file_id!: string;
 
-	@Column({type: "varchar", length: 128, unique: false, nullable: true})
+	@Column({type: "varchar", length: 16, unique: false, nullable: true})
 	profile_id!: string;
 
 	@CreateDateColumn()
-	time!: Date;
+	date!: Date;
 }

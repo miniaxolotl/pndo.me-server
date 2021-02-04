@@ -1,18 +1,13 @@
 import joi, { object } from "@hapi/joi";
 
 const LoginSchema = object({
-	username: joi.string()
-		.alphanum()
-		.lowercase()
-		.min(3)
-		.max(128)
+	email: joi.email({ tlds: { allow: true } })
 		.required(),
 
 	password: joi.string()
 		.min(6)
-		.max(128)
+		.max(32)
 		.required(),
-
 });
 
 export default LoginSchema;
