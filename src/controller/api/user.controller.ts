@@ -22,6 +22,7 @@ import { bcrypt, TimedJWT } from "../../util";
 import { UserData, AuthenticationResponce } from "types";
 
 import config from "../../../res/config.json";
+import { jwt } from "../../middleware";
 
 const router: Router = new Router();
 
@@ -29,136 +30,134 @@ const router: Router = new Router();
  * ANCHOR routes
  ************************************************/
 
-// router.get("/:username", async (ctx: ParameterizedContext) => {
-// 	const body: any = ctx.request.body;
-// 	const db: Connection = ctx.mysql;
+router.get("/:id", async (ctx: ParameterizedContext) => {
+	const body: any = ctx.request.body;
+	const db: Connection = ctx.mysql;
 	
-// 	const profile_repository = db.manager.getRepository(UserModel);
-// 	const profile = await profile_repository
-// 	.findOne({ username: ctx.params.username });
+	const user_collection = db.manager.getRepository(UserModel);
+	const user = await user_collection
+	.findOne({
+		where: {
+			user_id: ctx.params.id,
+		},
+		select: [ "username", "banned", "admin", "user_id" ]
+	});
 
-// 	if(profile) {
-// 		if(profile.username == ctx.state.username) {
-// 			delete profile.id;
-// 			delete profile.password;
+	if(user) {
+		ctx.body = user;
+	} else {
+		ctx.status = userNotFound.status;
+		ctx.body = userNotFound.message;
+	}
+});
 
-// 			ctx.body = profile;
-// 		} else {
-// 			delete profile.id;
-// 			delete profile.username;
-// 			delete profile.password;
-
-// 			ctx.body = profile;
-// 		}
-// 	} else {
-// 		ctx.status = userNotFound.status;
-// 		ctx.body = userNotFound.message;
-// 	}
-// });
-
-// router.patch("/:username", async (ctx: ParameterizedContext) => {
-// 	const body: any = ctx.request.body;
-// 	const db: Connection = ctx.mysql;
+router.get("/username/:id", async (ctx: ParameterizedContext) => {
+	const body: any = ctx.request.body;
+	const db: Connection = ctx.mysql;
 	
-// 	if(ctx.state.username == ctx.params.username) {
-// 		const { value, error } = ProfileUpdateSchema.validate(body);
-		
-// 		const profile_repository = db.manager.getRepository(UserModel);
+	const user_collection = db.manager.getRepository(UserModel);
+	const user = await user_collection
+	.findOne({
+		where: {
+			username: ctx.params.id,
+		},
+		select: [ "username", "banned", "admin", "user_id" ]
+	});
 
-// 		if(error) {
-// 			ctx.status = validationError.status;
-// 			ctx.body = validationError.message;
-// 		} else {
+	if(user) {
+		ctx.body = user;
+	} else {
+		ctx.status = userNotFound.status;
+		ctx.body = userNotFound.message;
+	}
+});
 
-// 			const profile = await profile_repository
-// 			.findOne({ username: ctx.params.username });
+router.patch("/:id", jwt.authenticate, async (ctx: ParameterizedContext) => {
+	const body: any = ctx.request.body;
+	const db: Connection = ctx.mysql;
 
-// 			let password_hash: string | null | undefined = undefined;
-// 			if(value.password) {
-// 				password_hash
-// 				= await bcrypt.gen_hash(validator.escape(body.password!));
-// 				if(!password_hash) {
-// 					password_hash = undefined;
-// 				}
-// 			}
+	const user_collection = db.manager.getRepository(UserModel);
+	
+	if((ctx.state.user_id == ctx.params.id) || ctx.state.admin) {
+		const { value, error } = UserUpdateSchema.validate(body);
+		if(error) {
+			ctx.status = validationError.status;
+			ctx.body = validationError.message;
+		} else {
+			let password_hash: string | null | undefined = undefined;
+			if(value.password) {
+				password_hash
+				= await bcrypt.gen_hash(validator.escape(body.password!));
+				if(!password_hash) {
+					password_hash = undefined;
+				}
+			}
 
-// 			if(profile) {
-// 				const profile_update = new UserModel();
-// 				profile_update.id = profile?.id!;
-// 				// profile_update.password = password_hash!;
-// 				profile_update.display_name 
-// 				= value.display_name 
-// 				&& value.display_name.toLowerCase() == profile.username
-// 				? value.display_name : undefined;
-// 				// profile_update.email = profile?.email!;
+			const user_update = new UserModel();
+			user_update.username = body?.username;
+			user_update.password = password_hash!;
+			user_update.email = body?.email;
+			
+			const update_res = await user_collection
+			.save(user_update)
+			.catch((err) => {
+				console.log(err);
+			});
+		}
+		{
+			const user = await user_collection
+				.findOne({ user_id: ctx.state.user_id });
+	
+			if(user) {
+				const payload: UserData = {
+					username: user.username,
+					email: user.email,
+					user_id: user.user_id,
+					admin: user.admin,
+					banned: user.banned
+				};
 				
-// 				const profile_res = await profile_repository
-// 				.save(profile_update)
-// 				.catch((err) => {
-// 					console.log(err);
-// 				});
-// 			} else {
-// 				ctx.status = actionUnsuccessful.status;
-// 				ctx.body = actionUnsuccessful.message;
-// 			}
-// 		}
+				const token
+					= TimedJWT.sign(payload, config.crypt.secret);
+				const res: AuthenticationResponce = {
+					payload,
+					authorization: token,
+				};
 
-// 		const profile_data = await profile_repository
-// 		.findOne({ username: ctx.params.username });
+				ctx.body = res;
+			} else {			
+				ctx.status = userNotFound.status;
+				ctx.body = userNotFound.message;
+			}
+		}
+	} else {
+		ctx.status = unauthorizedAccess.status;
+		ctx.body = unauthorizedAccess.message;
+	}
+});
 
-// 		if(profile_data) {
-// 			const payload: UserData = {
-// 				username: profile_data.username,
-// 				profile_id: profile_data.profile_id,
-// 				display_name: profile_data.display_name,
-// 				flags: {
-// 					admin: profile_data.admin,
-// 					moderator: profile_data.moderator,
-// 					banned: profile_data.banned,
-// 				},
-// 			};
-			
-// 			const token
-// 			= TimedJWT.sign(payload, config.crypt.secret);
-			
-// 			const res: AuthenticationResponce = {
-// 				payload,
-// 				authorization: token,
-// 			};
-			
-// 			ctx.body = res;
-// 		} else {
-// 			ctx.status = actionUnsuccessful.status;
-// 			ctx.body = actionUnsuccessful.message;
-// 		}
-// 	} else {
-// 		ctx.status = unauthorizedAccess.status;
-// 		ctx.body = unauthorizedAccess.message;
-// 	}
-// });
+router.delete("/:id", jwt.authenticate, async (ctx: ParameterizedContext) => {
+	const body: any = ctx.request.body;
+	const db: Connection = ctx.mysql;
 
-// router.delete("/:username", async (ctx: ParameterizedContext) => {
-// 	const body: any = ctx.request.body;
-// 	const db: Connection = ctx.mysql;
-	
-// 	const profile_repository = db.manager.getRepository(UserModel);
+	const user_collection = db.manager.getRepository(UserModel);
 
-// 	if(ctx.params.username == ctx.state.username) {
-// 		const profile = await profile_repository
-// 		.delete({ username: ctx.params.username });
+	if((ctx.params.id == ctx.state.user_id) || ctx.state.admin) {
+		const user = await user_collection
+		.delete({ user_id: ctx.params.id });
 
-// 		if(profile) {
-// 			ctx.status = actionSuccessful.status;
-// 			ctx.body = actionSuccessful.message;
-// 		} else {
-// 			ctx.status = actionUnsuccessful.status;
-// 			ctx.body = actionUnsuccessful.message;
-// 		}
-// 	} else {
-// 		ctx.status = unauthorizedAccess.status;
-// 		ctx.body = unauthorizedAccess.message;
-// 	}
-// });
+		if(user) {
+			ctx.status = actionSuccessful.status;
+			ctx.body = actionSuccessful.message;
+		} else {
+			ctx.status = actionUnsuccessful.status;
+			ctx.body = actionUnsuccessful.message;
+		}
+	} else {
+		ctx.status = unauthorizedAccess.status;
+		ctx.body = unauthorizedAccess.message;
+	}
+});
 
 const Controller: Router = router;
 

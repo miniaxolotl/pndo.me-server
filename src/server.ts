@@ -128,6 +128,7 @@ app.use(Body({
 	router.use("/auth", authentication.routes());
 
 	{ /* api */
+		router.use("/api/user", api.UserController.routes());
 		router.use("/api/comment", api.CommentController.routes());
 		router.use("/api/file", api.FileController.routes());
 		router.use("/api/stream", api.StreamController.routes());
