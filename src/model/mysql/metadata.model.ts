@@ -23,10 +23,10 @@ export default class Metadata {
 	@Column({type: "varchar", nullable: true})
 	user_id!: string;
 
-	@Column({type: "boolean", nullable: false})
+	@Column({type: "boolean", nullable: false, default: false})
 	protected!: boolean;
 
-	@Column({type: "boolean", nullable: false})
+	@Column({type: "boolean", nullable: false, default: true})
 	hidden!: boolean;
 
 	@Column({type: "int", nullable: false, default: 0})

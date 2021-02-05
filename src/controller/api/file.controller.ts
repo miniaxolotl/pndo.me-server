@@ -85,22 +85,15 @@ router.post("/", jwt.identify, async (ctx: ParameterizedContext) => {
 					metadata.filename = file.name;
 					metadata.type = file.type;
 					metadata.bytes = file.size;
-					metadata.user_id = ctx.state.profile_id;
-
-					const flag_protected
-						= String(body.protected).toLowerCase() == 'true';
-					const flag_hidden
-						= String(body.hidden).toLowerCase() == 'true';
+					metadata.user_id = ctx.state.user_id;
+					metadata.bytes = file.size;
 
 					metadata.protected
-					= authenticated && (flag_protected || !body.protected)
-					? true : false;
-
+						= (Boolean(body.protected) && ctx.state.user_id) 
+						|| ((body.protected == undefined) && ctx.state.user_id) 
+						? true : false;
 					metadata.hidden
-					= metadata.protected || (flag_hidden || !body.hidden)
-					? true : false;
-
-					metadata.bytes = file.size;
+						= Boolean(body.hidden) ? Boolean(body.hidden) : true;
 
 					const res = await file_collection
 					.save(metadata)
@@ -124,6 +117,7 @@ router.post("/", jwt.identify, async (ctx: ParameterizedContext) => {
 			ctx.status = serverError.status;
 			ctx.body = serverError;
 		}).then((res) => {
+			(res as any).id = undefined;
 			ctx.body = res;
 		});
 	}
