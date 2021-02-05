@@ -43,6 +43,7 @@ export default async (ctx: any, next: any): Promise<void> => {
 						email: user.email,
 						user_id: user.user_id,
 						admin: user.admin,
+						banned: user.banned
 					};
 
 					ctx.state = state;

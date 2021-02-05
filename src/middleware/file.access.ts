@@ -28,7 +28,8 @@ export default async (ctx: any, next: any): Promise<void> => {
 		username: null,
 		email: null,
 		user_id: null,
-		admin: null
+		admin: null,
+		banned: null
 	};
 
 	const db: Connection = ctx.mysql;
@@ -54,10 +55,11 @@ export default async (ctx: any, next: any): Promise<void> => {
 						email: user.email,
 						user_id: user.user_id,
 						admin: user.admin,
+						banned: user.banned
 					};
 
 					if(file.protected) {
-						if(file.user_id == file.user_id) {
+						if(file.user_id == state.user_id || state.admin) {
 							ctx.state = state;
 							await next();
 						} else {

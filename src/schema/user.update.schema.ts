@@ -13,6 +13,10 @@ const UserUpdateSchema = object({
 	password: joi.string()
 		.min(6)
 		.max(32),
+
+	admin: joi.boolean(),
+
+	banned: joi.boolean(),
 });
 
 export default UserUpdateSchema;

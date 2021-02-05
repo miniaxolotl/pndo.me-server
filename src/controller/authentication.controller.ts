@@ -45,8 +45,8 @@ router.post("/register", async (ctx: ParameterizedContext, next) => {
 				ctx.body.invalid.push(e.context.key);
 		});
 	} else {
-			const form: UserModel = value;
-			const user_id = crypto.randomBytes(8).toString('hex');
+		const form: UserModel = value;
+		const user_id = crypto.randomBytes(8).toString('hex');
 		const password_hash: string | null
 		= await bcrypt.gen_hash(form.password!);
 		
@@ -78,7 +78,8 @@ router.post("/register", async (ctx: ParameterizedContext, next) => {
 						username: user_data.username,
 						email: user_data.email,
 						user_id: user_data.user_id,
-						admin: user_data.admin
+						admin: user_data.admin,
+						banned: user.banned
 					};
 
 					const token = TimedJWT.sign(payload, config.crypt.secret);
@@ -125,7 +126,8 @@ router.post("/login", async (ctx: ParameterizedContext) => {
 					username: user.username,
 					email: user.email,
 					user_id: user.user_id,
-					admin: user.admin
+					admin: user.admin,
+					banned: user.banned
 				};
 				
 				const token = TimedJWT.sign(payload, config.crypt.secret);

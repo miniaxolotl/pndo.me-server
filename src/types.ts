@@ -18,6 +18,7 @@ export interface UserData {
 	email: string | null;
 	admin: boolean | null;
 	moderator?: boolean;
+	banned: boolean | null;
 }
 
 export interface TimedPayload {
