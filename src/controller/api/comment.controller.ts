@@ -14,114 +14,95 @@ import { MetadataModel, UserModel, CommentModel } from "../../model/mysql";
 import { UploadRequest } from "types";
 import { Connection } from "typeorm";
 import { resourceNotFound, unauthorizedAccess, noContent, invalidRequest, actionSuccessful, actionUnsuccessful } from "../../util/status";
+import { fileAccess, jwt } from "../../middleware";
+import crypto from "crypto";
 
 const router: Router = new Router();
 
-// router.get("/:id", async (ctx: ParameterizedContext) => {
-// 	const body: any = ctx.request.body;
-// 	const db: Connection = ctx.mysql;
+router.get("/:id", fileAccess, async (ctx: ParameterizedContext) => {
+	const body: any = ctx.request.body;
+	const db: Connection = ctx.mysql;
 
-// 	const file_repo = db.manager.getRepository(MetadataModel);
-// 	const comment_repo = db.manager.getRepository(CommentModel);
+	// const file_collection = db.manager.getRepository(MetadataModel);
+	const comment_collection = db.manager.getRepository(CommentModel);
 	
-// 	const file_data = await file_repo.findOne({ file_id: ctx.params.id });
+	// const file = await file_collection.findOne({ file_id: ctx.params.id });
 	
-// 	if(!file_data
-// 	|| (file_data.protected && (file_data.profile_id != ctx.state.profile_id))) {
-// 		if(!file_data) {
-// 			ctx.status = resourceNotFound.status;
-// 			ctx.body = resourceNotFound.message;
-// 		} else {
+	const comments = await comment_collection.find({
+		where: {
+			file_id: ctx.params.id
+		},
+		order: {
+			create_date: "ASC"
+		}
+	});
 
-// 			ctx.status = unauthorizedAccess.status;
-// 			ctx.body = unauthorizedAccess.message;
-// 		}
-// 	} else {
-// 		const comments = await comment_repo.find({
-// 			where: {
-// 				file_id: ctx.params.id
-// 			},
-// 			order: {
-// 				created: "ASC"
-// 			}
-// 		});
+	if(!comments) {
+		ctx.status = noContent.status;
+		ctx.body = noContent.message;
+	} else {
+		ctx.body = comments;
+	}
+});
 
-// 		if(!comments) {
-// 			ctx.status = noContent.status;
-// 			ctx.body = noContent.message;
-// 		} else {
-// 			ctx.body = comments;
-// 		}
-// 	}
-// });
+router.post("/:id", fileAccess, async (ctx: ParameterizedContext) => {
+	const body: any = ctx.request.body;
+	const db: Connection = ctx.mysql;
 
-// router.post("/:id", async (ctx: ParameterizedContext) => {
-// 	const body: any = ctx.request.body;
-// 	const db: Connection = ctx.mysql;
-
-// 	const file_repo = db.manager.getRepository(MetadataModel);
-// 	const comment_repo = db.manager.getRepository(CommentModel);
+	const file_collection = db.manager.getRepository(MetadataModel);
+	const comment_collection = db.manager.getRepository(CommentModel);
 	
-// 	const file_data = await file_repo.findOne({ file_id: ctx.params.id });
-	
-// 	if(!file_data
-// 	|| (file_data.protected && (file_data.profile_id != ctx.state.profile_id))) {
-// 		if(!file_data) {
-// 			ctx.status = resourceNotFound.status;
-// 			ctx.body = resourceNotFound;
-// 		} else {
-// 			ctx.status = unauthorizedAccess.status;
-// 			ctx.body = unauthorizedAccess;
-// 		}
-// 	} else {
-// 		const comment = new CommentModel();
-// 		comment.message = body.message;
-// 		comment.file_id = file_data.file_id;
-// 		comment.profile_id = ctx.state.profile_id;
+	const file = await file_collection.findOne({ file_id: ctx.params.id });
+	if(file) {
+		const comment_id = crypto.randomBytes(8).toString('hex');
 
-// 		if(!body.message) {
-// 			ctx.status = invalidRequest.status;
-// 			ctx.body = invalidRequest.message;
-// 		} else {
-// 			await comment_repo.save(comment);
+		const comment = new CommentModel();
+		comment.message = body.message;
+		comment.comment_id = comment_id;
+		comment.file_id = file.file_id;
+		comment.user_id = ctx.state.user_id;
 
-// 			ctx.body = comment;
-// 		}
-// 	}
-// });
+		if(!body.message) {
+			ctx.status = invalidRequest.status;
+			ctx.body = invalidRequest.message;
+		} else {
+			await comment_collection.save(comment);
+			ctx.body = comment;
+		}
+	} else {
+		ctx.status = invalidRequest.status;
+		ctx.body = invalidRequest.message;
+	}
+});
 
-// router.delete("/:id", async (ctx: ParameterizedContext) => {
-// 	const body: any = ctx.request.body;
-// 	const db: Connection = ctx.mysql;
+router.delete("/:id", jwt.authenticate, async (ctx: ParameterizedContext) => {
+	const body: any = ctx.request.body;
+	const db: Connection = ctx.mysql;
 
-// 	const file_repo = db.manager.getRepository(MetadataModel);
-// 	const comment_repo = db.manager.getRepository(CommentModel);
-	
-// 	const file_data = await file_repo.findOne({ file_id: ctx.params.id });
+	// const file_collection = db.manager.getRepository(MetadataModel);
+	const comment_collection = db.manager.getRepository(CommentModel);
 
-// 	// if(!file_data
-// 	// || (file_data.protected && (file_data.profile_id != ctx.state.profile_id))) {
-// 	// 	if(!file_data) {
-// 	// 		ctx.status = resourceNotFound.status;
-// 	// 		ctx.body = resourceNotFound.message;
-// 	// 	} else {
-// 	// 		ctx.status = unauthorizedAccess.status;
-// 	// 		ctx.body = unauthorizedAccess.message;
-// 	// 	}
-// 	// } else {
-// 		const status = await comment_repo.delete({
-// 			id: ctx.params.id,
-// 		});
+	const comment
+		= await comment_collection.findOne({ comment_id: ctx.params.id });
+		console.log(comment);
+		
+	if(comment) {
+		const status = await comment_collection.delete({
+			comment_id: ctx.params.id,
+		});
 
-// 		if(status.affected && status.affected > 0) {
-// 			ctx.status = actionSuccessful.status;
-// 			ctx.body = actionSuccessful.message;
-// 		} else {
-// 			ctx.status = actionUnsuccessful.status;
-// 			ctx.body = actionUnsuccessful.message;
-// 		}
-// 	// }
-// });
+		if(status.affected && status.affected > 0) {
+			ctx.status = actionSuccessful.status;
+			ctx.body = actionSuccessful.message;
+		} else {
+			ctx.status = actionUnsuccessful.status;
+			ctx.body = actionUnsuccessful.message;
+		}
+	} else {
+		ctx.status = resourceNotFound.status;
+		ctx.body = resourceNotFound.message;
+	}
+});
 
 const Controller: Router = router;
 
