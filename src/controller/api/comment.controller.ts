@@ -84,7 +84,6 @@ router.delete("/:id", jwt.authenticate, async (ctx: ParameterizedContext) => {
 
 	const comment
 		= await comment_collection.findOne({ comment_id: ctx.params.id });
-		console.log(comment);
 		
 	if(comment) {
 		const status = await comment_collection.delete({
