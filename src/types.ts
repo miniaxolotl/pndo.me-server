@@ -55,7 +55,7 @@ export interface Metadata {
 	downloads?: number;
 	views?: number;
 	bytes: number;
-	uploaded?: Date;
+	create_date?: Date;
 	expires?: Date | null;
 }
 

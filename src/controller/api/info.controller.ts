@@ -62,7 +62,7 @@ router.get("/:id", fileAccess, async (ctx: ParameterizedContext) => {
 			downloads: file_data.downloads,
 			views: file_data.views,
 			bytes: file_data.bytes,
-			uploaded: file_data.create_date,
+			create_date: file_data.create_date,
 			expires: file_data.expire_date,
 		};
 
