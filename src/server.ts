@@ -100,7 +100,7 @@ const socket_router = new Router();
  * ANCHOR cors
  ************************************************/
 
-app.use(CORS({origin: "*"}));
+app.use(CORS({ origin: "*" }));
 
 /************************************************
  * ANCHOR middleware
@@ -135,6 +135,10 @@ app.use(Body({
 		router.use("/api/info", api.InfoController.routes());
 		router.use("/api/meta", api.MetaController.routes());
 	}
+
+	router.use("/file", api.FileController.routes());
+	router.use("/stream", api.StreamController.routes());
+	router.use("/info", api.InfoController.routes());
 
 	app.use(router.routes());
 }
