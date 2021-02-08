@@ -79,8 +79,18 @@ export default async (ctx: any, next: any): Promise<void> => {
 				ctx.body = unauthorizedAccess.message;
 			}
 		} catch(err) {
-			ctx.status = unauthorizedAccess.status;
-			ctx.body = unauthorizedAccess.message;
+			if (file) {
+				if(file.protected) {
+					ctx.status = unauthorizedAccess.status;
+					ctx.body = unauthorizedAccess.message;
+				} else {
+					ctx.state = state;
+					await next();
+				}
+			} else {
+				ctx.status = unauthorizedAccess.status;
+				ctx.body = unauthorizedAccess.message;
+			}
 		}
 	} else if (file) {
 		if(file.protected) {
