@@ -92,17 +92,26 @@ router.post("/", jwt.identify, async (ctx: ParameterizedContext) => {
 						= (Boolean(body.protected) && ctx.state.user_id) 
 						|| ((body.protected == undefined) && ctx.state.user_id) 
 						? true : false;
+
+					metadata.protected
+						= ((body.protected == undefined) && ctx.state.user_id)
+						|| (((body.protected as any) == "true")
+							&& ctx.state.user_id)
+						? true : false;
+
 					metadata.hidden
-						= Boolean(body.hidden) ? Boolean(body.hidden) : true;
+						= (body.hidden == undefined) || metadata.protected
+							? true : (body.hidden as any) == "true";
 
 					const res = await file_collection
-					.save(metadata)
+					.save(metadata, { })
 					.catch(() => {
 						ctx.status = serverError.status;
 						ctx.body = serverError.message;
 					});
 
 					if(res) {
+						(res as any).id = undefined;
 						resolve(res);
 					} else {
 						reject();
@@ -117,7 +126,6 @@ router.post("/", jwt.identify, async (ctx: ParameterizedContext) => {
 			ctx.status = serverError.status;
 			ctx.body = serverError;
 		}).then((res) => {
-			(res as any).id = undefined;
 			ctx.body = res;
 		});
 	}
