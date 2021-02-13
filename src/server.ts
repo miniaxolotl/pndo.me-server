@@ -136,12 +136,12 @@ app.use(Body({
 		router.use("/api/meta", api.MetaController.routes());
 	}
 
-	router.use("/user", api.UserController.routes());
-	router.use("/comment", api.CommentController.routes());
-	router.use("/file", api.FileController.routes());
-	router.use("/stream", api.StreamController.routes());
-	router.use("/info", api.InfoController.routes());
-	router.use("/meta", api.MetaController.routes());
+	router.use("/u", api.UserController.routes());
+	router.use("/c", api.CommentController.routes());
+	router.use("/f", api.FileController.routes());
+	router.use("/s", api.StreamController.routes());
+	router.use("/i", api.InfoController.routes());
+	router.use("/m", api.MetaController.routes());
 
 	app.use(router.routes());
 }
