@@ -136,9 +136,12 @@ app.use(Body({
 		router.use("/api/meta", api.MetaController.routes());
 	}
 
+	router.use("/user", api.UserController.routes());
+	router.use("/comment", api.CommentController.routes());
 	router.use("/file", api.FileController.routes());
 	router.use("/stream", api.StreamController.routes());
 	router.use("/info", api.InfoController.routes());
+	router.use("/meta", api.MetaController.routes());
 
 	app.use(router.routes());
 }
