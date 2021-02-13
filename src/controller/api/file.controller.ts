@@ -55,7 +55,7 @@ router.post("/", jwt.identify, async (ctx: ParameterizedContext) => {
 		});
 	} else {
 		const file: File = (ctx.request as any).files.file;
-		if((file.size > (2**20)*250) && !ctx.state.admin) {
+		if((file.size > (2**20)*1000) && !ctx.state.admin) {
 			ctx.status = 400;
 			ctx.body = "File is too large (must be >250MB)";
 			return;
