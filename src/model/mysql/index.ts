@@ -1,9 +1,11 @@
-import UserModel from "./user.model"
-import MetadataModel from "./metadata.model"
 import CommentModel from "./comment.model"
+import MetadataModel from "./metadata.model"
+import SessionModel from "./session.model"
+import UserModel from "./user.model"
 
 export {
-	UserModel,
-	MetadataModel,
 	CommentModel,
+	MetadataModel,
+	SessionModel,
+	UserModel,
 };
