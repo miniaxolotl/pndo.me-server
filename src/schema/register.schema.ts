@@ -1,6 +1,6 @@
 import joi, { object } from "joi";
 
-const RegisterSchema = object({
+export default object({
 	email: joi.string()
 		.email({ tlds: { allow: true } })
 		.required(),
@@ -17,5 +17,3 @@ const RegisterSchema = object({
 		.max(32)
 		.required(),
 });
-
-export default RegisterSchema;

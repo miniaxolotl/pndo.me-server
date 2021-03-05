@@ -1,6 +1,6 @@
 import joi, { object } from "joi";
 
-const LoginSchema = object({
+export default object({
 	email: joi.string()
 		.email({ tlds: { allow: true } })
 		.required(),
@@ -10,5 +10,3 @@ const LoginSchema = object({
 		.max(32)
 		.required(),
 });
-
-export default LoginSchema;

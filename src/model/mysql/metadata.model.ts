@@ -1,49 +1,32 @@
-import {Entity, Column, PrimaryGeneratedColumn, CreateDateColumn} from "typeorm";
+import {Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, JoinColumn, OneToMany, OneToOne} from "typeorm";
+import { AlbumMetadataModel, CommentModel } from ".";
 
 @Entity()
 export default class Metadata {
 	@PrimaryGeneratedColumn()
 	id!: number;
 
-	@Column({type: "varchar", unique: true, nullable: false})
-	file_id!: string;
+	@Column({ type: "varchar", unique: true, nullable: false })
+	metadata_id!: string;
 
-	@Column({type: "varchar", nullable: false})
-	sha256!: string;
+	@Column({ type: "varchar", nullable: false })
+	title!: string;
 
-	@Column({type: "varchar", nullable: false})
-	md5!: string;
-
-	@Column({type: "varchar", nullable: false})
-	filename!: string;
-
-	@Column({type: "varchar", nullable: false})
+	@Column({ type: "varchar", nullable: false })
 	type!: string;
 
-	@Column({type: "varchar", nullable: true})
-	user_id!: string;
-
-	@Column({type: "boolean", nullable: false, default: false})
-	protected!: boolean;
-
-	@Column({type: "boolean", nullable: false, default: true})
-	hidden!: boolean;
-
-	@Column({type: "int", nullable: false, default: 0})
-	downloads!: number;
-
-	@Column({type: "int", nullable: false, default: 0})
-	views!: number;
-
-	@Column({type: "int", nullable: false})
+	@Column({ type: "int", nullable: false })
 	bytes!: number;
+
+	@Column({ type: "varchar", nullable: false })
+	sha256!: string;
+
+	@Column({ type: "varchar", nullable: false })
+	md5!: string;
 
 	@CreateDateColumn()
 	create_date?: Date;
 
-	@Column({type: "date", default: null})
-	expire_date!: Date;
+	/* relations */
 
-	@Column({type: "boolean", nullable: false, default: false})
-	deleted!: boolean;
 }

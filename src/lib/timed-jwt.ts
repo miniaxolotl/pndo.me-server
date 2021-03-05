@@ -10,7 +10,7 @@
 import jwt from 'jsonwebtoken';
 
 import config from "../../res/config.json";
-import { TimedPayload } from 'types';
+import { TimedPayload } from './types';
 
 const default_expire_length =  (1000*60*60*24*365);
 
@@ -37,7 +37,7 @@ const sign = (payload: any, secret: string,
 		createdOn: current_time
 	};
 
-	const token = jwt.sign(timed_payload, config.crypt.secret);
+	const token = jwt.sign(timed_payload, secret);
 
 	return token;
 };

@@ -1,17 +1,11 @@
-import {Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, JoinColumn, ManyToOne, OneToOne} from "typeorm";
-import { UserModel, AlbumModel, MetadataModel } from ".";
+import {Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, OneToOne, JoinColumn, OneToMany, ManyToOne} from "typeorm";
+import { AlbumModel, MetadataModel, UserModel } from ".";
 
 @Entity()
-export default class Comment {
+export default class AlbumMetadata {
 	@PrimaryGeneratedColumn()
 	id!: number;
-	
-	@Column({ type: "text", nullable: false })
-	message!: string;
 
-	@CreateDateColumn()
-	create_date!: Date;
-	
 	/* relations */
 
     @ManyToOne(() => UserModel, user => user.user_id)
@@ -25,4 +19,4 @@ export default class Comment {
     @ManyToOne(() => MetadataModel, metadata => metadata.metadata_id)
 	@JoinColumn({ name: "metadata_id", referencedColumnName: "metadata_id" })
 	metadata!: MetadataModel;
-};
+}

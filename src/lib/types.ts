@@ -1,6 +1,6 @@
 /**
  * types.ts
- * Collection of global types.
+ * Collection of types used in application.
  * Notes:
  * - N/A
  * @author Elias Mawa <elias@emawa.io>
@@ -14,23 +14,35 @@
 export interface UserData {
 	user_id: string | null;
 	username: string | null;
-	password?: string;
 	email: string | null;
 	admin: boolean | null;
-	moderator?: boolean;
 	banned: boolean | null;
-}
+};
+
+export interface UserState {
+	session_id: string | null;
+	user_id: string | null;
+	username: string | null;
+	email: string | null;
+	admin: boolean | null;
+	banned: boolean | null;
+};
 
 export interface TimedPayload {
 	payload: any;
 	validUntil: number;
 	createdOn: number;
-}
+};
 
-export interface AuthenticationResponce {
+export interface ApiResponce {
 	payload: UserData;
 	authorization: string;
-}
+};
+
+export interface SessionResponce {
+	payload: UserData;
+	session_id: string;
+};
 
 /************************************************
  * ANCHOR file

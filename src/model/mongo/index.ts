@@ -1,5 +1,5 @@
-import FileTimestampModel from "./timestamp.model"
+import MetadataTimestampModel from "./timestamp.model"
 
 export {
-	FileTimestampModel,
+	MetadataTimestampModel,
 };
