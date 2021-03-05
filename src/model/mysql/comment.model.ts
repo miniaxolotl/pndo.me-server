@@ -22,7 +22,7 @@ export default class Comment {
 	@JoinColumn({ name: "album_id", referencedColumnName: "album_id" })
 	album!: AlbumModel;
 
-    @ManyToOne(() => MetadataModel, metadata => metadata.metadata_id)
-	@JoinColumn({ name: "metadata_id", referencedColumnName: "metadata_id" })
+    @ManyToOne(() => MetadataModel, metadata => metadata.file_id)
+	@JoinColumn({ name: "file_id", referencedColumnName: "file_id" })
 	metadata!: MetadataModel;
 };

@@ -1,4 +1,4 @@
-import AlbumMetadataModel from "./album-metadata.model"
+import AlbumMetadataModel from "./album-file.model"
 import AlbumModel from "./album.model"
 import CommentModel from "./comment.model"
 import MetadataModel from "./metadata.model"

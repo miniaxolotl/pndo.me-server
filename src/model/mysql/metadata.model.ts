@@ -7,7 +7,7 @@ export default class Metadata {
 	id!: number;
 
 	@Column({ type: "varchar", unique: true, nullable: false })
-	metadata_id!: string;
+	file_id!: string;
 
 	@Column({ type: "varchar", nullable: false })
 	title!: string;

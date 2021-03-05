@@ -2,7 +2,7 @@ import {Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, OneToOne, Join
 import { AlbumModel, MetadataModel, UserModel } from ".";
 
 @Entity()
-export default class AlbumMetadata {
+export default class AlbumFile {
 	@PrimaryGeneratedColumn()
 	id!: number;
 
@@ -16,7 +16,7 @@ export default class AlbumMetadata {
 	@JoinColumn({ name: "album_id", referencedColumnName: "album_id" })
 	album!: AlbumModel;
 
-    @ManyToOne(() => MetadataModel, metadata => metadata.metadata_id)
-	@JoinColumn({ name: "metadata_id", referencedColumnName: "metadata_id" })
+    @ManyToOne(() => MetadataModel, metadata => metadata.file_id)
+	@JoinColumn({ name: "file_id", referencedColumnName: "file_id" })
 	metadata!: MetadataModel;
 }
