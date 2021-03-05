@@ -16,15 +16,6 @@ import { Connection } from "typeorm";
 
 export default async (ctx: ParameterizedContext, next: any) => {
 
-	const state: UserState = {
-		session_id: null,
-		user_id: null,
-		username: null,
-		email: null,
-		admin: null,
-		banned: null,
-	};
-
 	const session_id = ctx.cookies.get("session_id");
 	if(session_id) {
 		const db: Connection = ctx.mysql;
@@ -44,11 +35,9 @@ export default async (ctx: ParameterizedContext, next: any) => {
 			ctx.state = state;
 			await next();
 		} else {
-			ctx.state = state;
 			await next();
 		}
 	} else {
-		ctx.state = state;
 		await next();
 	}
 }

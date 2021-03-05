@@ -125,7 +125,7 @@ app.use(Body({
  * ANCHOR authentication
  ************************************************/
 
-(app.context as any).state = {};
+	session_id: null,
  
 /************************************************
  * ANCHOR routes
