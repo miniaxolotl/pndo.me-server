@@ -20,10 +20,12 @@ import { createConnection } from "typeorm";
 import * as ModelsMysql from './model/mysql';
 import * as ModelsMongo from './model/mongo';
 
-import { AuthController } from "./controller";
+import { Api, AuthController } from "./controller";
 import { V1AuthController } from './controller/v1';
 
 import config from "../res/config.json";
+import { JWTIdentify, SessionIdentify } from './middleware';
+import { UserState } from './lib/types';
 
 /************************************************
  * ANCHOR setup
@@ -125,20 +127,35 @@ app.use(Body({
  * ANCHOR authentication
  ************************************************/
 
+(app.context as Koa.BaseContext & { state: UserState }).state = {
 	session_id: null,
+	user_id: null,
+	username: null,
+	email: null,
+	admin: null,
+	banned: null,
+};
  
 /************************************************
  * ANCHOR routes
  ************************************************/
   
 { /* HTTP */
-	router.use("/auth", AuthController.routes());
-
 	{ /* api */
-		router.use("/api/v1/auth", V1AuthController.routes());
-		
+		router.use("/api/auth", V1AuthController.routes());
+		router.use([
+			"/api/file",
+			"/api/f"
+		], SessionIdentify, Api.FileController.routes());
 	}
 
+	{ /* api/v1 */
+		router.use("/api/v1/auth", V1AuthController.routes());
+		router.use([
+			"/api/v1/file",
+			"/api/v1/f"
+		], JWTIdentify, Api.FileController.routes());
+	}
 	app.use(router.routes());
 }
 
