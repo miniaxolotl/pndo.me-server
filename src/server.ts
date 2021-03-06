@@ -79,6 +79,7 @@ const socket_router = new Router();
 		database: config.db.mysql.schema,
 		entities: [
 			ModelsMysql.AlbumMetadataModel,
+			ModelsMysql.AlbumUserModel,
 			ModelsMysql.AlbumModel,
 			ModelsMysql.CommentModel,
 			ModelsMysql.MetadataModel,
@@ -118,7 +119,11 @@ app.use(CORS({ origin: "*" }));
 app.use(KoaJSON({ pretty: false, param: 'pretty' }));
 
 app.use(Body({
-	formidable: { maxFileSize: 2**32, uploadDir: config.dir.data },
+	formidable: {
+		maxFileSize: 2**32,
+		uploadDir: `${config.dir.data}/temp`,
+		multiples: true,
+	},
     multipart: true,
 	urlencoded: true,
 }));
@@ -142,19 +147,43 @@ app.use(Body({
   
 { /* HTTP */
 	{ /* api */
-		router.use("/api/auth", V1AuthController.routes());
-		router.use([
-			"/api/file",
-			"/api/f"
+		const api: Router = new Router();
+
+		api.use("/auth", V1AuthController.routes());
+		api.use([
+			"/file",
+			"/f"
 		], SessionIdentify, Api.FileController.routes());
+		api.use([
+			"/album",
+			"/a"
+		], SessionIdentify, Api.AlbumController.routes());
+		api.use([
+			"/search",
+			"/s"
+		], SessionIdentify, Api.SearchController.routes());
+
+		router.use("/api", api.routes());
 	}
 
 	{ /* api/v1 */
-		router.use("/api/v1/auth", V1AuthController.routes());
-		router.use([
-			"/api/v1/file",
-			"/api/v1/f"
+		const v1: Router = new Router();
+
+		v1.use("/auth", V1AuthController.routes());
+		v1.use([
+			"/file",
+			"/f"
 		], JWTIdentify, Api.FileController.routes());
+		v1.use([
+			"/album",
+			"/a"
+		], JWTIdentify, Api.AlbumController.routes());
+		v1.use([
+			"/search",
+			"/s"
+		], JWTIdentify, Api.SearchController.routes());
+		
+		router.use("/api/v1", v1.routes());
 	}
 	app.use(router.routes());
 }
