@@ -267,13 +267,14 @@ router.get("/:id", async (ctx: ParameterizedContext) => {
 		const file_path = path.join(`${config.dir.data}/data`, file_data[0].file_id);
 		
 		if(fs.existsSync(file_path)) {
+			const file_stream = fs.createReadStream(file_path);
 			ctx.response.set("content-type", file_data[0].type);
 			ctx.response.set("content-length", `${file_data[0].size}`);
 			ctx.response.set("accept-ranges", "bytes");
 			ctx.response.set("connection", "keep-alive");
-			ctx.response.set("content-disposition", `inline; filename="${file_data[0].filename}`);
+			ctx.response.set("content-disposition", `inline; filename="${file_data[0].filename}"`);
 
-			ctx.body = fs.createReadStream(file_path);
+			ctx.body = file_stream;
 			return;
 		} else {
 			ctx.status = HttpStatus.CLIENT_ERROR.NOT_FOUND.status;
