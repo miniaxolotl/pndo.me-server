@@ -10,10 +10,13 @@ export default class Metadata {
 	file_id!: string;
 
 	@Column({ type: "varchar", nullable: false })
-	title!: string;
+	filename!: string;
 
 	@Column({ type: "varchar", nullable: false })
 	type!: string;
+
+	@Column({ type: "varchar", nullable: true })
+	ext!: string;
 
 	@Column({ type: "int", nullable: false })
 	bytes!: number;
@@ -24,8 +27,17 @@ export default class Metadata {
 	@Column({ type: "varchar", nullable: false })
 	md5!: string;
 
+	@Column({ type: "int", default: 0 })
+	d_count!: number;
+
+	@Column({ type: "int", default: 0 })
+	v_count!: number;
+	
+	@Column({ type: "boolean", default: false, nullable: false })
+	deleted!: boolean;
+
 	@CreateDateColumn()
-	create_date?: Date;
+	create_date!: Date;
 
 	/* relations */
 

@@ -6,7 +6,7 @@ export default class MetadataTimestamp {
 	id!: number;
 
 	@Column({type: "varchar", length: 16, unique: false, nullable: false})
-	metadata_id!: string;
+	file_id!: string;
 
 	@Column({type: "varchar", length: 16, unique: false, nullable: true})
 	user_id!: string;
