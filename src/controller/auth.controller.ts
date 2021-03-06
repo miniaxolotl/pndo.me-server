@@ -112,9 +112,7 @@ router.post("/login", async (ctx: ParameterizedContext) => {
 	if(error) {
 		ctx.status = HttpStatus.CLIENT_ERROR.BAD_REQUEST.status;
 		ctx.body = { errors: [] };
-		error.details.forEach(e => {
-			(ctx.body as any).errors.push(e.message);
-		});
+		error.details.forEach(e => { (ctx.body as any).errors.push(e.message); });
 	} else {
 		const user_data = await user_collection.findOne({ email: value.email });
 		if(user_data) {

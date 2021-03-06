@@ -31,8 +31,12 @@ export default async (ctx: ParameterizedContext, next: any) => {
 			const token = authorization_key.split(' ')[1];
 			const authorization = TimedJWT.verify(token, secret);
 			if(authorization) {
-				const session = await session_collection.findOne({ session_id: authorization.payload });
-				if(session && session.user) {
+				const session = await session_collection.findOne({
+					session_id: authorization.payload 
+				}, {
+					relations: [ "user" ]
+				});
+				if(session && session.user && (session.expire_date > new Date())) {
 					const state: UserState = {
 						session_id: session.session_id,
 						user_id: session.user.user_id,

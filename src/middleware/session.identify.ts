@@ -11,19 +11,23 @@ import { ParameterizedContext } from "koa";
 
 import { UserState } from "../lib/types";
 
-import { SessionModel } from "../model/mysql";
+import { SessionModel, UserModel } from "../model/mysql";
 import { Connection } from "typeorm";
 
 export default async (ctx: ParameterizedContext, next: any) => {
-
+	
 	const session_id = ctx.cookies.get("session_id");
 	if(session_id) {
 		const db: Connection = ctx.mysql;
 
 		const session_collection = db.manager.getRepository(SessionModel);
-
-		const session = await session_collection.findOne({ session_id });
-		if(session && session.user) {
+		
+		const session = await session_collection.findOne({
+			session_id
+		}, {
+			relations: [ "user" ]
+		});
+		if(session && session.user && (session.expire_date > new Date())) {
 			const state: UserState = {
 				session_id: session.session_id,
 				user_id: session.user.user_id,

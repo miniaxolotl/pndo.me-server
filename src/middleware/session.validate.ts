@@ -23,8 +23,12 @@ export default async (ctx: ParameterizedContext, next: any) => {
 
 		const session_collection = db.manager.getRepository(SessionModel);
 
-		const session = await session_collection.findOne({ session_id });
-		if(session && session.user) {
+		const session = await session_collection.findOne({
+			session_id
+		}, {
+			relations: [ "user" ]
+		});
+		if(session && session.user && (session.expire_date > new Date())) {
 			const state: UserState = {
 				session_id: session.session_id,
 				user_id: session.user.user_id,
