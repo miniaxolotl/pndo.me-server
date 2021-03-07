@@ -1,10 +1,10 @@
 /**
- * ablum.controller.ts
- * Album management workflows
+ * search.controller.ts
+ * Database search functions
  * Notes:
  * - N/A
  * @author Elias Mawa <elias@emawa.io>
- * Created by Elias Mawa on 20-02-14
+ * Created by Elias Mawa on 21-03-07
  */
 
 import { ParameterizedContext } from "koa";
