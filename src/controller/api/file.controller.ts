@@ -66,65 +66,89 @@ router.post("/", async (ctx: ParameterizedContext) => {
 			await new Promise<any>(async (resolve, reject) => {
 				let album: AlbumModel;
 				const album_data = await db.query("SELECT * FROM album where album_id = ?", [ value.album ]);
-				if(!value.album && !album_data.length) {
-					album = new AlbumModel();
-					album.album_id = uid();
-					album.protected = value.protected && ctx.state.user_id ? value.protected : false;
-					album.hidden = album.protected || album.hidden ? true : false;
-					album.title = uid(4);
-					await transaction.save(album);
-					(ctx.body as { album: {}, files: any[] }).album = album;
+				if (value.album && !album_data.length) {
+					ctx.status = HttpStatus.CLIENT_ERROR.BAD_REQUEST.status;
+					ctx.body = HttpStatus.CLIENT_ERROR.BAD_REQUEST.message;
+					resolve(null);
 				} else {
-					album = value.album;
-					(ctx.body as { album: {}, files: any[] }).album = album_data[0];
-				}
-				
-				list.forEach(async (file) => {
-					const file_id = uid();
-					const temp_path = (file as any).path;
-					const file_path = path.join(`${config.dir.data}/data`, file_id);
+					if(!value.album) {
+						album = new AlbumModel();
+						album.album_id = uid();
+						album.protected = value.protected && ctx.state.user_id ? value.protected : false;
+						album.hidden = album.protected || album.hidden ? true : false;
+						album.title = uid(4);
+						album.password = value.password ? await Bcrypt.gen_hash(value.password) : null!;
+						await transaction.save(album);
 
-					const in_stream = fs.createReadStream(temp_path);
-					const out_stream = fs.createWriteStream(file_path);
+						album.password = undefined!;
+						album.deleted = undefined!;
+						album.id = undefined!;
+						album.d_count = undefined!;
+						album.v_count = undefined!;
+						(ctx.body as { album: {}, files: any[] }).album = album;
+					} else {
+						album = value.album;
 
-					const ext_stream = fs.createReadStream(temp_path);
-					const file_ext = await FileType.fromStream(ext_stream);
+						album.password = undefined!;
+						album.deleted = undefined!;
+						album.id = undefined!;
+						album.d_count = undefined!;
+						album.v_count = undefined!;
+						(ctx.body as { album: {}, files: any[] }).album = album_data[0];
+					}
 					
-					in_stream.on('end', async () => {
-						const sha256 = in_stream.pipe(crypto.createHash('sha256')).digest('hex');
-						const md5 = in_stream.pipe(crypto.createHash('md5')).digest('hex');
-						fs.unlinkSync(temp_path);
+					list.forEach(async (file) => {
+						const file_id = uid();
+						const temp_path = (file as any).path;
+						const file_path = path.join(`${config.dir.data}/data`, file_id);
 
-						const metadata = new MetadataModel();
-						metadata.file_id = file_id;
-						metadata.sha256 = sha256;
-						metadata.md5 = md5;
-						metadata.filename = file.name;
-						metadata.type = file.type;
-						metadata.bytes = file.size;
-						metadata.ext = file_ext ? file_ext.ext : '';
-						await transaction.save(metadata);
+						const in_stream = fs.createReadStream(temp_path);
+						const out_stream = fs.createWriteStream(file_path);
 
-						const album_metatdata = new AlbumMetadataModel();
-						album_metatdata.album = album;
-						album_metatdata.metadata = metadata;
-						await transaction.save(album_metatdata);
+						const ext_stream = fs.createReadStream(temp_path);
+						const file_ext = await FileType.fromStream(ext_stream);
+						
+						in_stream.on('end', async () => {
+							const sha256 = in_stream.pipe(crypto.createHash('sha256')).digest('hex');
+							const md5 = in_stream.pipe(crypto.createHash('md5')).digest('hex');
+							fs.unlinkSync(temp_path);
 
-						const album_user = new AlbumUserModel();
-						album_user.album = album;
-						album_user.user = ctx.state.user_id;
-						await transaction.save(album_user);
+							const metadata = new MetadataModel();
+							metadata.file_id = file_id;
+							metadata.sha256 = sha256;
+							metadata.md5 = md5;
+							metadata.filename = file.name;
+							metadata.type = file.type;
+							metadata.bytes = file.size;
+							metadata.ext = file_ext ? file_ext.ext : '';
+							await transaction.save(metadata);
 
-						if(album_metatdata) {
-							(ctx.body as { album: {}, files: any[] }).files.push(metadata);
-							resolve(null);
-						} else {
-							ctx.status = HttpStatus.SERVER_ERROR.INTERNAL.status;
-							ctx.body = HttpStatus.SERVER_ERROR.INTERNAL.message;
-							reject(false);
-						}
-					}).pipe(out_stream);
-				});
+							metadata.id = undefined!;
+							metadata.d_count = undefined!;
+							metadata.v_count = undefined!;
+							metadata.deleted = undefined!;
+							
+							const album_metatdata = new AlbumMetadataModel();
+							album_metatdata.album = album;
+							album_metatdata.metadata = metadata;
+							await transaction.save(album_metatdata);
+
+							const album_user = new AlbumUserModel();
+							album_user.album = album;
+							album_user.user = ctx.state.user_id;
+							await transaction.save(album_user);
+
+							if(album_metatdata) {
+								(ctx.body as { album: {}, files: any[] }).files.push(metadata);
+								resolve(null);
+							} else {
+								ctx.status = HttpStatus.SERVER_ERROR.INTERNAL.status;
+								ctx.body = HttpStatus.SERVER_ERROR.INTERNAL.message;
+								resolve(null);
+							}
+						}).pipe(out_stream);
+					});
+				}
 			});
 		});
 	}
@@ -159,90 +183,113 @@ router.post("/url", async (ctx: ParameterizedContext) => {
 			
 			let album: AlbumModel;
 			const album_data = await db.query("SELECT * FROM album where album_id = ?", [ value.album ]);
-			if(!value.album && !album_data.length) {
-				album = new AlbumModel();
-				album.album_id = uid();
-				album.protected = value.protected && ctx.state.user_id ? value.protected : false;
-				album.hidden = album.protected || album.hidden ? true : false;
-				album.title = uid(4);
-				await transaction.save(album);
-				(ctx.body as { album: {}, files: any[] }).album = album;
+			if (value.album && !album_data.length) {
+				ctx.status = HttpStatus.CLIENT_ERROR.BAD_REQUEST.status;
+				ctx.body = HttpStatus.CLIENT_ERROR.BAD_REQUEST.message;
+				return;
 			} else {
-				album = value.album;
-				(ctx.body as { album: {}, files: any[] }).album = album_data[0];
-			}
+				if(!value.album) {
+					album = new AlbumModel();
+					album.album_id = uid();
+					album.protected = value.protected && ctx.state.user_id ? value.protected : false;
+					album.hidden = album.protected || album.hidden ? true : false;
+					album.title = uid(4);
+					album.password = value.password ? await Bcrypt.gen_hash(value.password) : null!;
+					await transaction.save(album);
 
-			for(var i = 0; i < list.length; i++) {
-				const file_id = uid();
-				const temp_path = path.join(`${config.dir.data}/temp`, file_id);
-				const file_path = path.join(`${config.dir.data}/data`, file_id);
+					album.password = undefined!;
+					album.deleted = undefined!;
+					album.id = undefined!;
+					album.d_count = undefined!;
+					album.v_count = undefined!;
+					(ctx.body as { album: {}, files: any[] }).album = album;
+				} else {
+					album = value.album;
 
-				await new Promise<any>(async (resolve, reject) => {
-					const res = await fetch(list[i])
-					const dlStream = fs.createWriteStream(temp_path);
-					res.body.pipe(dlStream);
-					dlStream.on('finish', async () => {
-						const in_stream = fs.createReadStream(temp_path);
-						const out_stream = fs.createWriteStream(file_path);
+					album.password = undefined!;
+					album.deleted = undefined!;
+					album.id = undefined!;
+					album.d_count = undefined!;
+					album.v_count = undefined!;
+					(ctx.body as { album: {}, files: any[] }).album = album_data[0];
+				}
+				for(var i = 0; i < list.length; i++) {
+					const file_id = uid();
+					const temp_path = path.join(`${config.dir.data}/temp`, file_id);
+					const file_path = path.join(`${config.dir.data}/data`, file_id);
 
-						const ext_stream = fs.createReadStream(temp_path);
-						const file_ext = await FileType.fromStream(ext_stream);
-						let alt_ext = '';
+					await new Promise<any>(async (resolve, reject) => {
+						const res = await fetch(list[i])
+						const dlStream = fs.createWriteStream(temp_path);
+						res.body.pipe(dlStream);
+						dlStream.on('finish', async () => {
+							const in_stream = fs.createReadStream(temp_path);
+							const out_stream = fs.createWriteStream(file_path);
 
-						in_stream.on('end', async () => {
-							const sha256 = in_stream.pipe(crypto.createHash('sha256')).digest('hex');
-							const md5 = in_stream.pipe(crypto.createHash('md5')).digest('hex');
-							fs.unlinkSync(temp_path);
-							const file_stats = fs.statSync(file_path);
+							const ext_stream = fs.createReadStream(temp_path);
+							const file_ext = await FileType.fromStream(ext_stream);
+							let alt_ext = '';
 
-							const headers = res.headers.raw();
-							const file_type = headers["content-type"][0].split(";");
-							const file_size = headers["content-length"];
-							let file_name = headers["content-disposition"]
-							? headers["content-disposition"][0]
-							.split(';')[1].split('"')[1] : file_id;
+							in_stream.on('end', async () => {
+								const sha256 = in_stream.pipe(crypto.createHash('sha256')).digest('hex');
+								const md5 = in_stream.pipe(crypto.createHash('md5')).digest('hex');
+								fs.unlinkSync(temp_path);
+								const file_stats = fs.statSync(file_path);
 
-							const qq = list[i].split("/");
-							if(qq.length > 0 && qq[qq.length-1]) {
-								file_name = qq[qq.length-1];
-								const seg =  file_type[0].split("/");
-								if(!file_ext && seg.length > 0) {
-									alt_ext = seg[seg.length-1];
+								const headers = res.headers.raw();
+								const file_type = headers["content-type"][0].split(";");
+								const file_size = headers["content-length"];
+								let file_name = headers["content-disposition"]
+								? headers["content-disposition"][0]
+								.split(';')[1].split('"')[1] : file_id;
+
+								const qq = list[i].split("/");
+								if(qq.length > 0 && qq[qq.length-1]) {
+									file_name = qq[qq.length-1];
+									const seg =  file_type[0].split("/");
+									if(!file_ext && seg.length > 0) {
+										alt_ext = seg[seg.length-1];
+									}
 								}
-							}
 
-							const metadata = new MetadataModel();
-							metadata.file_id = file_id;
-							metadata.sha256 = sha256;
-							metadata.md5 = md5;
-							metadata.ext = file_ext ? file_ext.ext : alt_ext;
-							metadata.filename = file_name.split('.').length > 1
-							? `${file_name}` : metadata.ext ? `${file_name}.${metadata.ext}` : file_name;
-							metadata.type = file_type[0];
-							metadata.bytes = Number(file_size ? file_size[0] : file_stats.size);
-							await transaction.save(metadata);
+								const metadata = new MetadataModel();
+								metadata.file_id = file_id;
+								metadata.sha256 = sha256;
+								metadata.md5 = md5;
+								metadata.ext = file_ext ? file_ext.ext : alt_ext;
+								metadata.filename = file_name.split('.').length > 1
+								? `${file_name}` : metadata.ext ? `${file_name}.${metadata.ext}` : file_name;
+								metadata.type = file_type[0];
+								metadata.bytes = Number(file_size ? file_size[0] : file_stats.size);
+								await transaction.save(metadata);
 
-							const album_metatdata = new AlbumMetadataModel();
-							album_metatdata.album = album;
-							album_metatdata.metadata = metadata;
-							await transaction.save(album_metatdata);
+								metadata.id = undefined!;
+								metadata.d_count = undefined!;
+								metadata.v_count = undefined!;
+								metadata.deleted = undefined!;
 
-							const album_user = new AlbumUserModel();
-							album_user.album = album;
-							album_user.user = ctx.state.user_id;
-							await transaction.save(album_user);
+								const album_metatdata = new AlbumMetadataModel();
+								album_metatdata.album = album;
+								album_metatdata.metadata = metadata;
+								await transaction.save(album_metatdata);
 
-							if(album_metatdata) {
-								(ctx.body as { album: {}, files: any[] }).files.push(metadata);
-								resolve(null);
-							} else {
-								ctx.status = HttpStatus.SERVER_ERROR.INTERNAL.status;
-								ctx.body = HttpStatus.SERVER_ERROR.INTERNAL.message;
-								reject(false);
-							}
-						}).pipe(out_stream).on('error', reject);
-					}).on('error', reject);
-				});
+								const album_user = new AlbumUserModel();
+								album_user.album = album;
+								album_user.user = ctx.state.user_id;
+								await transaction.save(album_user);
+
+								if(album_metatdata) {
+									(ctx.body as { album: {}, files: any[] }).files.push(metadata);
+									resolve(null);
+								} else {
+									ctx.status = HttpStatus.SERVER_ERROR.INTERNAL.status;
+									ctx.body = HttpStatus.SERVER_ERROR.INTERNAL.message;
+									reject(false);
+								}
+							}).pipe(out_stream).on('error', reject);
+						}).on('error', reject);
+					});
+				}
 			}
 		});
 	}

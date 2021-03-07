@@ -52,8 +52,6 @@ router.all("/", async (ctx: ParameterizedContext) => {
 		error.details.forEach(e => { (ctx.body as any).errors.push(e.message); });
 		return;
 	} else {
-
-
 		const n_page_query = await db.query(`
 			SELECT COUNT(*) as count
 			FROM
@@ -77,8 +75,6 @@ router.all("/", async (ctx: ParameterizedContext) => {
 
 		const n_page = Math.ceil(n_page_query[0].count / value.limit);
 		const c_page = n_page > 0 ? value.page > n_page ? n_page : value.page : 1;
-		console.log(n_page, c_page, n_page_query[0].count, n_page_query);
-		
 
 		const s_query = await db.query(`
 			SELECT
