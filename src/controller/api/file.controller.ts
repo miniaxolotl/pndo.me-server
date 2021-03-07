@@ -63,43 +63,44 @@ router.post("/", async (ctx: ParameterizedContext) => {
 
 		await db.transaction(async (transaction) => {
 			ctx.body = { album: {}, files: []}
-			await new Promise<any>(async (resolve, reject) => {
-				let album: AlbumModel;
-				const album_data = await db.query("SELECT * FROM album where album_id = ?", [ value.album ]);
-				if (value.album && !album_data.length) {
-					ctx.status = HttpStatus.CLIENT_ERROR.BAD_REQUEST.status;
-					ctx.body = HttpStatus.CLIENT_ERROR.BAD_REQUEST.message;
-					resolve(null);
+			let album: AlbumModel;
+			const album_data = await db.query("SELECT * FROM album where album_id = ?", [ value.album ]);
+			if (value.album && !album_data.length) {
+				ctx.status = HttpStatus.CLIENT_ERROR.BAD_REQUEST.status;
+				ctx.body = HttpStatus.CLIENT_ERROR.BAD_REQUEST.message;
+				return;
+			} else {
+				if(!value.album) {
+					album = new AlbumModel();
+					album.album_id = uid();
+					album.protected = value.protected && ctx.state.user_id ? value.protected : false;
+					album.hidden = album.protected || album.hidden ? true : false;
+					album.title = uid(4);
+					album.password = value.password ? await Bcrypt.gen_hash(value.password) : null!;
+					await transaction.save(album);
+
+					album.password = undefined!;
+					album.deleted = undefined!;
+					album.id = undefined!;
+					album.d_count = undefined!;
+					album.v_count = undefined!;
+					(ctx.body as { album: {}, files: any[] }).album = album;
 				} else {
-					if(!value.album) {
-						album = new AlbumModel();
-						album.album_id = uid();
-						album.protected = value.protected && ctx.state.user_id ? value.protected : false;
-						album.hidden = album.protected || album.hidden ? true : false;
-						album.title = uid(4);
-						album.password = value.password ? await Bcrypt.gen_hash(value.password) : null!;
-						await transaction.save(album);
+					album = value.album;
 
-						album.password = undefined!;
-						album.deleted = undefined!;
-						album.id = undefined!;
-						album.d_count = undefined!;
-						album.v_count = undefined!;
-						(ctx.body as { album: {}, files: any[] }).album = album;
-					} else {
-						album = value.album;
+					album.password = undefined!;
+					album.deleted = undefined!;
+					album.id = undefined!;
+					album.d_count = undefined!;
+					album.v_count = undefined!;
+					(ctx.body as { album: {}, files: any[] }).album = album_data[0];
+				}
 
-						album.password = undefined!;
-						album.deleted = undefined!;
-						album.id = undefined!;
-						album.d_count = undefined!;
-						album.v_count = undefined!;
-						(ctx.body as { album: {}, files: any[] }).album = album_data[0];
-					}
-					
-					list.forEach(async (file) => {
+				for(let i = 0; i < list.length; i++) {
+					await new Promise<any>(async (resolve, reject) => {
+
 						const file_id = uid();
-						const temp_path = (file as any).path;
+						const temp_path = (list[i] as any).path;
 						const file_path = path.join(`${config.dir.data}/data`, file_id);
 
 						const in_stream = fs.createReadStream(temp_path);
@@ -111,15 +112,14 @@ router.post("/", async (ctx: ParameterizedContext) => {
 						in_stream.on('end', async () => {
 							const sha256 = in_stream.pipe(crypto.createHash('sha256')).digest('hex');
 							const md5 = in_stream.pipe(crypto.createHash('md5')).digest('hex');
-							fs.unlinkSync(temp_path);
-
+							
 							const metadata = new MetadataModel();
 							metadata.file_id = file_id;
 							metadata.sha256 = sha256;
 							metadata.md5 = md5;
-							metadata.filename = file.name;
-							metadata.type = file.type;
-							metadata.bytes = file.size;
+							metadata.filename = list[i].name;
+							metadata.type = list[i].type;
+							metadata.bytes = list[i].size;
 							metadata.ext = file_ext ? file_ext.ext : '';
 							await transaction.save(metadata);
 
@@ -138,18 +138,20 @@ router.post("/", async (ctx: ParameterizedContext) => {
 							album_user.user = ctx.state.user_id;
 							await transaction.save(album_user);
 
+							fs.unlinkSync(temp_path);
 							if(album_metatdata) {
 								(ctx.body as { album: {}, files: any[] }).files.push(metadata);
-								resolve(null);
+								resolve(null); 
 							} else {
 								ctx.status = HttpStatus.SERVER_ERROR.INTERNAL.status;
 								ctx.body = HttpStatus.SERVER_ERROR.INTERNAL.message;
-								resolve(null);
+								reject();
 							}
-						}).pipe(out_stream);
+						});
+						in_stream.pipe(out_stream);
 					});
 				}
-			});
+			}
 		});
 	}
 });
@@ -245,7 +247,7 @@ router.post("/url", async (ctx: ParameterizedContext) => {
 
 								const qq = list[i].split("/");
 								if(qq.length > 0 && qq[qq.length-1]) {
-									file_name = qq[qq.length-1];
+									file_name = headers["content-disposition"] ? file_name : qq[qq.length-1];
 									const seg =  file_type[0].split("/");
 									if(!file_ext && seg.length > 0) {
 										alt_ext = seg[seg.length-1];
@@ -284,7 +286,7 @@ router.post("/url", async (ctx: ParameterizedContext) => {
 								} else {
 									ctx.status = HttpStatus.SERVER_ERROR.INTERNAL.status;
 									ctx.body = HttpStatus.SERVER_ERROR.INTERNAL.message;
-									reject(false);
+									reject();
 								}
 							}).pipe(out_stream).on('error', reject);
 						}).on('error', reject);
@@ -312,7 +314,6 @@ router.get("/:id", async (ctx: ParameterizedContext) => {
 		return;
 	} else {
 		const file_path = path.join(`${config.dir.data}/data`, file_data[0].file_id);
-		3
 		if(fs.existsSync(file_path)) {
 			const file_stream = fs.createReadStream(file_path);
 			ctx.response.set("content-type", file_data[0].type);
