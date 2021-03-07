@@ -151,13 +151,17 @@ app.use(Body({
 
 		api.use("/auth", V1AuthController.routes());
 		api.use([
+			"/album",
+			"/a"
+		], SessionIdentify, Api.AlbumController.routes());
+		api.use([
 			"/file",
 			"/f"
 		], SessionIdentify, Api.FileController.routes());
 		api.use([
-			"/album",
-			"/a"
-		], SessionIdentify, Api.AlbumController.routes());
+			"/info",
+			"/i"
+		], SessionIdentify, Api.InfoController.routes());
 		api.use([
 			"/search",
 			"/s"
@@ -165,7 +169,7 @@ app.use(Body({
 		api.use([
 			"/stream",
 			"/str"
-		], JWTIdentify, Api.StreamController.routes());
+		], SessionIdentify, Api.StreamController.routes());
 		
 		router.use("/api", api.routes());
 	}
@@ -175,13 +179,17 @@ app.use(Body({
 
 		v1.use("/auth", V1AuthController.routes());
 		v1.use([
+			"/album",
+			"/a"
+		], JWTIdentify, Api.AlbumController.routes());
+		v1.use([
 			"/file",
 			"/f"
 		], JWTIdentify, Api.FileController.routes());
 		v1.use([
-			"/album",
-			"/a"
-		], JWTIdentify, Api.AlbumController.routes());
+			"/info",
+			"/i"
+		], JWTIdentify, Api.InfoController.routes());
 		v1.use([
 			"/search",
 			"/s"
