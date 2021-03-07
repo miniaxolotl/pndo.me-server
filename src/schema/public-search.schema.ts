@@ -4,22 +4,22 @@ const PublicSearchSchema = object({
 	albumname: joi.string()
 	.optional()
 	.allow('')
-	.default(null),
+	.default(''),
 
 	filename: joi.string()
 	.optional()
 	.allow('')
-	.default(null),
+	.default(''),
 
 	type: joi.string()
 	.optional()
 	.allow('')
-	.default(null),
+	.default(''),
 
 	page: joi.number()
 	.optional()
 	.greater(0)
-	.default(0),
+	.default(1),
 
 	limit: joi.number()
 	.optional()
