@@ -162,7 +162,11 @@ app.use(Body({
 			"/search",
 			"/s"
 		], SessionIdentify, Api.SearchController.routes());
-
+		api.use([
+			"/stream",
+			"/str"
+		], JWTIdentify, Api.StreamController.routes());
+		
 		router.use("/api", api.routes());
 	}
 
@@ -182,6 +186,10 @@ app.use(Body({
 			"/search",
 			"/s"
 		], JWTIdentify, Api.SearchController.routes());
+		v1.use([
+			"/stream",
+			"/str"
+		], JWTIdentify, Api.StreamController.routes());
 		
 		router.use("/api/v1", v1.routes());
 	}
