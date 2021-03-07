@@ -37,6 +37,43 @@ const router: Router = new Router();
  * ANCHOR routes
  ************************************************/
 
+router.post("/", async (ctx: ParameterizedContext) => {
+
+	const body: UploadRequest = ctx.request.body;
+	const db: Connection = ctx.mysql;
+	
+	const { value, error } = AlbumSchema.validate(body, {
+		abortEarly: false,
+		errors: { escapeHtml: true }
+	});
+	if(error) {
+		ctx.status = HttpStatus.CLIENT_ERROR.BAD_REQUEST.status;
+		ctx.body = { errors: [] };
+		error.details.forEach(e => { (ctx.body as any).errors.push(e.message); });
+		return;
+	} else {
+		await db.transaction(async (transaction) => {
+			const album = new AlbumModel();
+			album.album_id = uid();
+			album.protected = value.protected;
+			album.hidden = value.hidden;
+			album.title = value.title ? value.title : uid(4);
+			album.password = value.password ? await Bcrypt.gen_hash(value.password) : null!;
+			await transaction.save(album);
+
+			const album_user = new AlbumUserModel();
+			album_user.album = album;
+			album_user.user = ctx.state.user_id;
+			await transaction.save(album_user);
+
+			album.password = undefined!;
+			album.deleted = undefined!;
+			album.id = undefined!;
+			ctx.body = album;
+		});
+	}
+});
+
 router.get("/:id", async (ctx: ParameterizedContext) => {
 	
 	const db: Connection = ctx.mysql;
