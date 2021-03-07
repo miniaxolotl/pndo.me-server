@@ -12,7 +12,7 @@ import Router from "koa-router";
 
 import { Bcrypt, HttpStatus } from "../../lib";
 import { SessionResponce, UploadRequest } from "../../lib/types";
-import { LoginSchema, PublicSearchSchema, RegisterSchema, UploadSchema, URLUploadSchema } from "../../schema";
+import { FileUpdateSchema, LoginSchema, PublicSearchSchema, RegisterSchema, UploadSchema, URLUploadSchema } from "../../schema";
 
 import { AlbumMetadataModel, AlbumModel, AlbumUserModel, MetadataModel, SessionModel, UserModel } from "../../model/mysql";
 import { Connection } from "typeorm";
@@ -312,11 +312,11 @@ router.get("/:id", async (ctx: ParameterizedContext) => {
 		return;
 	} else {
 		const file_path = path.join(`${config.dir.data}/data`, file_data[0].file_id);
-		
+		3
 		if(fs.existsSync(file_path)) {
 			const file_stream = fs.createReadStream(file_path);
 			ctx.response.set("content-type", file_data[0].type);
-			ctx.response.set("content-length", `${file_data[0].size}`);
+			ctx.response.set("content-length", `${file_data[0].bytes}`);
 			ctx.response.set("accept-ranges", "bytes");
 			ctx.response.set("connection", "keep-alive");
 			ctx.response.set("content-disposition", `inline; filename="${file_data[0].filename}"`);
@@ -351,7 +351,7 @@ router.get("/:id/:filename", async (ctx: ParameterizedContext) => {
 		
 		if(fs.existsSync(file_path)) {
 			ctx.response.set("content-type", file_data[0].type);
-			ctx.response.set("content-length", `${file_data[0].size}`);
+			ctx.response.set("content-length", `${file_data[0].bytes}`);
 			ctx.response.set("accept-ranges", "bytes");
 			ctx.response.set("connection", "keep-alive");
 			ctx.response.set("content-disposition", `inline; filename="${file_data[0].filename}`);
@@ -362,6 +362,59 @@ router.get("/:id/:filename", async (ctx: ParameterizedContext) => {
 			ctx.status = HttpStatus.CLIENT_ERROR.NOT_FOUND.status;
 			ctx.body = HttpStatus.CLIENT_ERROR.NOT_FOUND.message;
 			return;
+		}
+	}
+});
+
+router.patch("/:id", async (ctx: ParameterizedContext) => {
+
+	const body: UploadRequest = ctx.request.body;
+	const db: Connection = ctx.mysql;
+	
+	const { value, error } = FileUpdateSchema.validate(body, {
+		abortEarly: false,
+		errors: { escapeHtml: true }
+	});
+	if(error) {
+		ctx.status = HttpStatus.CLIENT_ERROR.BAD_REQUEST.status;
+		ctx.body = { errors: [] };
+		error.details.forEach(e => { (ctx.body as any).errors.push(e.message); });
+		return;
+	} else {
+		const file = await db.getRepository(MetadataModel).findOne({ file_id: ctx.params.id });
+		if(!file) {
+			ctx.status = HttpStatus.CLIENT_ERROR.NOT_FOUND.status;
+			ctx.body = HttpStatus.CLIENT_ERROR.NOT_FOUND.message;
+			return;
+		} else {
+			const data = await new Promise<MetadataModel | null>((resolve, reject) => {
+				db.transaction(async (transaction) => {
+					const file_u = {
+						...new MetadataModel(),
+						...value,
+						file_id: ctx.params.id
+					};
+					await transaction.getRepository(MetadataModel).save({
+						...file,
+						...file_u
+					}).then((res) => {
+						resolve(res);
+					}).catch(() => {
+						resolve(null);
+					});
+				});
+			});
+
+			if(data) {
+				data.id = undefined!;
+				data.deleted = undefined!;
+				ctx.body = data;
+				return;
+			} else {
+				ctx.status = HttpStatus.CLIENT_ERROR.BAD_REQUEST.status;
+				ctx.body = HttpStatus.CLIENT_ERROR.BAD_REQUEST.message;
+				return;
+			}
 		}
 	}
 });
