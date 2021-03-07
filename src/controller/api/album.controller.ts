@@ -12,6 +12,7 @@ import Router from "koa-router";
 
 import { Bcrypt, HttpStatus } from "../../lib";
 import { SessionResponce, UploadRequest } from "../../lib/types";
+import { AlbumAccess } from "../../middleware";
 import { AlbumSchema, AlbumUpdateSchema, LoginSchema, RegisterSchema, UploadSchema, URLUploadSchema } from "../../schema";
 
 import { AlbumMetadataModel, AlbumModel, AlbumUserModel, MetadataModel, SessionModel, UserModel } from "../../model/mysql";
@@ -41,6 +42,8 @@ router.post("/", async (ctx: ParameterizedContext) => {
 
 	const body: UploadRequest = ctx.request.body;
 	const db: Connection = ctx.mysql;
+	console.log(ctx.state);
+	
 	
 	const { value, error } = AlbumSchema.validate(body, {
 		abortEarly: false,
@@ -74,7 +77,7 @@ router.post("/", async (ctx: ParameterizedContext) => {
 	}
 });
 
-router.patch("/:id", async (ctx: ParameterizedContext) => {
+router.patch("/:id", AlbumAccess, async (ctx: ParameterizedContext) => {
 
 	const body: UploadRequest = ctx.request.body;
 	const db: Connection = ctx.mysql;
@@ -127,7 +130,7 @@ router.patch("/:id", async (ctx: ParameterizedContext) => {
 	}
 });
 
-router.get("/:id", async (ctx: ParameterizedContext) => {
+router.get("/:id", AlbumAccess, async (ctx: ParameterizedContext) => {
 	
 	const db: Connection = ctx.mysql;
 
@@ -198,7 +201,7 @@ router.get("/:id", async (ctx: ParameterizedContext) => {
 	}
 });
 
-router.delete("/:id", async (ctx: ParameterizedContext) => {
+router.delete("/:id", AlbumAccess, async (ctx: ParameterizedContext) => {
 	
 	const db: Connection = ctx.mysql;
 	

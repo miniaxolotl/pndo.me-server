@@ -12,6 +12,7 @@ import Router from "koa-router";
 
 import { Bcrypt, HttpStatus } from "../../lib";
 import { SessionResponce, UploadRequest } from "../../lib/types";
+import { FileAccess } from "../../middleware";
 import { FileUpdateSchema, LoginSchema, PublicSearchSchema, RegisterSchema, UploadSchema, URLUploadSchema } from "../../schema";
 
 import { AlbumMetadataModel, AlbumModel, AlbumUserModel, MetadataModel, SessionModel, UserModel } from "../../model/mysql";
@@ -297,7 +298,7 @@ router.post("/url", async (ctx: ParameterizedContext) => {
 	}
 });
 
-router.get("/:id", async (ctx: ParameterizedContext) => {
+router.get("/:id", FileAccess, async (ctx: ParameterizedContext) => {
 	
 	const db: Connection = ctx.mysql;
 
@@ -332,7 +333,7 @@ router.get("/:id", async (ctx: ParameterizedContext) => {
 	}
 });
 
-router.get("/:id/:filename", async (ctx: ParameterizedContext) => {
+router.get("/:id/:filename", FileAccess, async (ctx: ParameterizedContext) => {
 	
 	const db: Connection = ctx.mysql;
 
@@ -367,7 +368,7 @@ router.get("/:id/:filename", async (ctx: ParameterizedContext) => {
 	}
 });
 
-router.patch("/:id", async (ctx: ParameterizedContext) => {
+router.patch("/:id", FileAccess, async (ctx: ParameterizedContext) => {
 
 	const body: UploadRequest = ctx.request.body;
 	const db: Connection = ctx.mysql;
@@ -420,7 +421,7 @@ router.patch("/:id", async (ctx: ParameterizedContext) => {
 	}
 });
 
-router.delete("/:id", async (ctx: ParameterizedContext) => {
+router.delete("/:id", FileAccess, async (ctx: ParameterizedContext) => {
 	
 	const db: Connection = ctx.mysql;
 	

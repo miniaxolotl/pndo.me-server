@@ -12,6 +12,7 @@ import Router from "koa-router";
 
 import { Bcrypt, HttpStatus } from "../../lib";
 import { SessionResponce, UploadRequest } from "../../lib/types";
+import { UserAccess } from "../../middleware";
 import { FileUpdateSchema, LoginSchema, PublicSearchSchema, RegisterSchema, UploadSchema, URLUploadSchema, UserUpdateSchema } from "../../schema";
 
 import { AlbumMetadataModel, AlbumModel, AlbumUserModel, MetadataModel, SessionModel, UserModel } from "../../model/mysql";
@@ -81,7 +82,7 @@ router.get("/username/:id", async (ctx: ParameterizedContext) => {
 	}
 });
 
-router.patch("/:id", async (ctx: ParameterizedContext) => {
+router.patch("/:id", UserAccess, async (ctx: ParameterizedContext) => {
 	const body: any = ctx.request.body;
 	const db: Connection = ctx.mysql;
 
@@ -133,7 +134,7 @@ router.patch("/:id", async (ctx: ParameterizedContext) => {
 	}
 });
 
-router.delete("/:id", async (ctx: ParameterizedContext) => {
+router.delete("/:id", UserAccess, async (ctx: ParameterizedContext) => {
 	const body: any = ctx.request.body;
 	const db: Connection = ctx.mysql;
 

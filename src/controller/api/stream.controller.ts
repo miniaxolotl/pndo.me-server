@@ -12,6 +12,7 @@ import Router from "koa-router";
 
 import { Bcrypt, HttpStatus } from "../../lib";
 import { SessionResponce, UploadRequest } from "../../lib/types";
+import { FileAccess } from "../../middleware";
 import { FileUpdateSchema, LoginSchema, PublicSearchSchema, RegisterSchema, UploadSchema, URLUploadSchema } from "../../schema";
 
 import { AlbumMetadataModel, AlbumModel, AlbumUserModel, MetadataModel, SessionModel, UserModel } from "../../model/mysql";
@@ -39,7 +40,7 @@ const router: Router = new Router();
  * ANCHOR routes
  ************************************************/
 
-router.all("/:id", async (ctx: ParameterizedContext) => {
+router.all("/:id", FileAccess, async (ctx: ParameterizedContext) => {
 
 	const db: Connection = ctx.mysql;
 	
