@@ -1,8 +1,6 @@
 import joi, { object } from "joi";
 
 const AlbumUpdateSchema = object({
-	album_id: joi.string()
-	.required(),
 
 	title: joi.string()
 	.optional(),

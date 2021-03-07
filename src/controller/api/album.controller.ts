@@ -89,7 +89,7 @@ router.patch("/:id", async (ctx: ParameterizedContext) => {
 		error.details.forEach(e => { (ctx.body as any).errors.push(e.message); });
 		return;
 	} else {
-		const album = await db.getRepository(AlbumModel).findOne({ album_id: value.album_id });
+		const album = await db.getRepository(AlbumModel).findOne({ album_id: ctx.params.id });
 		if(!album) {
 			ctx.status = HttpStatus.CLIENT_ERROR.NOT_FOUND.status;
 			ctx.body = HttpStatus.CLIENT_ERROR.NOT_FOUND.message;
@@ -97,11 +97,11 @@ router.patch("/:id", async (ctx: ParameterizedContext) => {
 		} else {
 			const data = await new Promise<AlbumModel | null>((resolve, reject) => {
 				db.transaction(async (transaction) => {
-					const album_u = new AlbumModel();
-					album_u.title = value.title;
-					album_u.password = value.password;
-					album_u.protected = value.protected;
-					album_u.hidden = value.hidden;
+					const album_u = {
+						...new AlbumModel(),
+						...value,
+						album_id: ctx.params.id
+					};
 					await transaction.getRepository(AlbumModel).save({
 						...album,
 						...album_u
