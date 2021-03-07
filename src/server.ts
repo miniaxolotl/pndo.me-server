@@ -170,6 +170,10 @@ app.use(Body({
 			"/stream",
 			"/str"
 		], SessionIdentify, Api.StreamController.routes());
+		api.use([
+			"/user",
+			"/u"
+		], SessionIdentify, Api.UserController.routes());
 		
 		router.use("/api", api.routes());
 	}
@@ -198,6 +202,10 @@ app.use(Body({
 			"/stream",
 			"/str"
 		], JWTIdentify, Api.StreamController.routes());
+		v1.use([
+			"/user",
+			"/u"
+		], JWTIdentify, Api.UserController.routes());
 		
 		router.use("/api/v1", v1.routes());
 	}

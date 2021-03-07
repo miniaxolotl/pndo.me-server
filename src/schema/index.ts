@@ -11,6 +11,8 @@ import URLUploadSchema from "./url-upload.schema"
 
 import PublicSearchSchema from "./public-search.schema"
 
+import UserUpdateSchema from "./user-update.schema"
+
 export {
 	LoginSchema,
 	PublicSearchSchema,
@@ -20,4 +22,5 @@ export {
 	AlbumSchema,
 	AlbumUpdateSchema,
 	FileUpdateSchema,
+	UserUpdateSchema,
 };
