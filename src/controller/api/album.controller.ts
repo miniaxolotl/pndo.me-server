@@ -12,14 +12,14 @@ import Router from "koa-router";
 
 import { Bcrypt, HttpStatus } from "../../lib";
 import { SessionResponce, UploadRequest } from "../../lib/types";
-import { LoginSchema, RegisterSchema, UploadSchema, URLUploadSchema } from "../../schema";
+import { AlbumSchema, AlbumUpdateSchema, LoginSchema, RegisterSchema, UploadSchema, URLUploadSchema } from "../../schema";
 
-import { AlbumMetadataModel, AlbumModel, MetadataModel, SessionModel, UserModel } from "../../model/mysql";
+import { AlbumMetadataModel, AlbumModel, AlbumUserModel, MetadataModel, SessionModel, UserModel } from "../../model/mysql";
 import { Connection } from "typeorm";
 
 import fetch from "node-fetch";
 import crypto from "crypto";
-import path, { join } from "path";
+import path, { join, resolve } from "path";
 import zlib from "zlib";
 import { spawn } from "child_process";
 import fs from "fs";
@@ -74,6 +74,59 @@ router.post("/", async (ctx: ParameterizedContext) => {
 	}
 });
 
+router.patch("/:id", async (ctx: ParameterizedContext) => {
+
+	const body: UploadRequest = ctx.request.body;
+	const db: Connection = ctx.mysql;
+	
+	const { value, error } = AlbumUpdateSchema.validate(body, {
+		abortEarly: false,
+		errors: { escapeHtml: true }
+	});
+	if(error) {
+		ctx.status = HttpStatus.CLIENT_ERROR.BAD_REQUEST.status;
+		ctx.body = { errors: [] };
+		error.details.forEach(e => { (ctx.body as any).errors.push(e.message); });
+		return;
+	} else {
+		const album = await db.getRepository(AlbumModel).findOne({ album_id: value.album_id });
+		if(!album) {
+			ctx.status = HttpStatus.CLIENT_ERROR.NOT_FOUND.status;
+			ctx.body = HttpStatus.CLIENT_ERROR.NOT_FOUND.message;
+			return;
+		} else {
+			const data = await new Promise<AlbumModel | null>((resolve, reject) => {
+				db.transaction(async (transaction) => {
+					const album_u = new AlbumModel();
+					album_u.title = value.title;
+					album_u.password = value.password;
+					album_u.protected = value.protected;
+					album_u.hidden = value.hidden;
+					await transaction.getRepository(AlbumModel).save({
+						...album,
+						...album_u
+					}).then((res) => {
+						resolve(res);
+					}).catch(() => {
+						resolve(null);
+					});
+				});
+			});
+
+			if(data) {
+				data.id = undefined!;
+				data.deleted = undefined!;
+				ctx.body = data;
+				return;
+			} else {
+				ctx.status = HttpStatus.CLIENT_ERROR.BAD_REQUEST.status;
+				ctx.body = HttpStatus.CLIENT_ERROR.BAD_REQUEST.message;
+				return;
+			}
+		}
+	}
+});
+
 router.get("/:id", async (ctx: ParameterizedContext) => {
 	
 	const db: Connection = ctx.mysql;
@@ -87,7 +140,8 @@ router.get("/:id", async (ctx: ParameterizedContext) => {
 		WHERE metadata.deleted = false`,
 		[ ctx.params.id ]
 	);
-	if(!album_files.length) {
+	const album = await db.getRepository(AlbumModel).findOne({ album_id: ctx.params.id })
+	if(!album_files.length || !album) {
 		ctx.status = HttpStatus.CLIENT_ERROR.NOT_FOUND.status;
 		ctx.body = HttpStatus.CLIENT_ERROR.NOT_FOUND.message;
 		return;
@@ -125,12 +179,13 @@ router.get("/:id", async (ctx: ParameterizedContext) => {
 			} else {
 				var file_data = fs.statSync(`${temp_path}.zip`)
 				const file_stream = fs.createReadStream(`${temp_path}.zip`);
+				const filename = album.title ? album.title : album.album_id;
 
 				ctx.response.set("content-type", 'application/zip');
 				ctx.response.set("content-length", `${file_data.size}`);
 				ctx.response.set("accept-ranges", "bytes");
 				ctx.response.set("connection", "keep-alive");
-				ctx.response.set("content-disposition", `attachment; filename="${ctx.params.id}.zip`);
+				ctx.response.set("content-disposition", `attachment; filename="${filename}.zip`);
 
 				ctx.body = file_stream;
 				return;
