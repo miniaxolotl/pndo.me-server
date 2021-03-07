@@ -1,6 +1,19 @@
 import joi, { object } from "joi";
 
 const PublicSearchSchema = object({
+
+	sort: joi.string()
+	.optional()
+	.insensitive()
+	.valid('album', 'filename', 'type', 'bytes', 'd_count', 'v_count', 'create_date')
+	.default('filename'),
+
+	direction: joi.string()
+	.optional()
+	.insensitive()
+	.valid('asc', 'dec')
+	.default('asc'),
+
 	albumname: joi.string()
 	.optional()
 	.allow('')
