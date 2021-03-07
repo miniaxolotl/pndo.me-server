@@ -163,6 +163,10 @@ app.use(Body({
 			"/i"
 		], SessionIdentify, Api.InfoController.routes());
 		api.use([
+			"/meta",
+			"/b"
+		], SessionIdentify, Api.MetaController.routes());
+		api.use([
 			"/search",
 			"/s"
 		], SessionIdentify, Api.SearchController.routes());
@@ -194,6 +198,10 @@ app.use(Body({
 			"/info",
 			"/i"
 		], JWTIdentify, Api.InfoController.routes());
+		v1.use([
+			"/meta",
+			"/b"
+		], JWTIdentify, Api.MetaController.routes());
 		v1.use([
 			"/search",
 			"/s"
