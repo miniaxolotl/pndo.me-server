@@ -65,18 +65,17 @@ router.all("/", async (ctx: ParameterizedContext) => {
 			INNER JOIN album
 			ON album_file.album_id = album.album_id
 			WHERE
-			((album.deleted=false AND album.hidden=false)
+			((album.deleted=false AND album.hidden=false AND album.protected=false)
 			AND (album.title LIKE "%${value.albumname}%"))) AS ALBUMS
 			INNER JOIN metadata
 			ON ALBUMS.file_id = metadata.file_id
-			WHERE metadata.deleted=false) AS FILE_LIST
-			WHERE (FILE_LIST.filename LIKE "%${value.filename}%" OR FILE_LIST.type LIKE "%${value.type}%")
+			WHERE metadata.deleted = false) AS FILE_LIST
+			WHERE(FILE_LIST.filename LIKE "%${value.filename}%" OR FILE_LIST.type LIKE "%${value.type}%")
 			ORDER BY ${value.sort} ${value.direction}`
 		);
 
 		const n_page = Math.ceil(n_page_query[0].count / value.limit);
 		const c_page = n_page > 0 ? value.page > n_page ? n_page : value.page : 1;
-		console.log(value);
 		
 		const s_query = await db.query(`
 			SELECT
@@ -92,11 +91,11 @@ router.all("/", async (ctx: ParameterizedContext) => {
 			INNER JOIN album
 			ON album_file.album_id = album.album_id
 			WHERE
-			((album.deleted=false AND album.hidden=false)
+			((album.deleted=false AND album.hidden=false AND album.protected=false)
 			AND (album.title LIKE "%${value.albumname}%"))) AS ALBUMS
 			INNER JOIN metadata
 			ON ALBUMS.file_id = metadata.file_id
-			WHERE metadata.deleted=false) AS FILE_LIST
+			WHERE metadata.deleted = false) AS FILE_LIST
 			WHERE (FILE_LIST.filename LIKE "%${value.filename}%" OR FILE_LIST.type LIKE "%${value.type}%")
 			LIMIT ${value.limit} OFFSET ${value.skip  * (c_page - 1)}`
 		);
