@@ -1,6 +1,8 @@
 import AlbumSchema from "./album.schema"
 import AlbumUpdateSchema from "./album-update.schema"
 
+import FileUpdateSchema from "./file-update.schema"
+
 import LoginSchema from "./login.schema";
 import RegisterSchema from "./register.schema";
 
@@ -17,4 +19,5 @@ export {
 	URLUploadSchema,
 	AlbumSchema,
 	AlbumUpdateSchema,
+	FileUpdateSchema,
 };
