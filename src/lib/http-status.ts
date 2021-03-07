@@ -47,7 +47,7 @@
 	},
 	UNAUTHORIZED: {
 		status: 401,
-		message: "Client Error: Bad unauthoriszed."
+		message: "Client Error: Unauthoriszed."
 	},
 	NOT_FOUND: {
 		status: 404,
