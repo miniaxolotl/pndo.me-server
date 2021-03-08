@@ -13,7 +13,7 @@ import Router from "koa-router";
 import { Bcrypt, HttpStatus } from "../../lib";
 import { SessionResponce, UploadRequest } from "../../lib/types";
 import { AlbumAccess, UserAccess } from "../../middleware";
-import { FileUpdateSchema, LoginSchema, PublicSearchSchema, RegisterSchema, UploadSchema, URLUploadSchema, UserUpdateSchema } from "../../schema";
+import { FileUpdateSchema, LoginSchema, PrivateAlbumSearchSchema, PrivateFileSearchSchema, PublicSearchSchema, RegisterSchema, UploadSchema, URLUploadSchema, UserUpdateSchema } from "../../schema";
 
 import { AlbumMetadataModel, AlbumModel, AlbumUserModel, MetadataModel, SessionModel, UserModel } from "../../model/mysql";
 import { Connection } from "typeorm";
@@ -60,12 +60,12 @@ router.get("/:id", async (ctx: ParameterizedContext) => {
 	}
 });
 
-router.get("/:id/album", UserAccess, async (ctx: ParameterizedContext) => {
+router.post("/:id/album", UserAccess, async (ctx: ParameterizedContext) => {
 
 	const body = ctx.request.body;
 	const db: Connection = ctx.mysql;
 
-	const { value, error } = PublicSearchSchema.validate(body, {
+	const { value, error } = PrivateAlbumSearchSchema.validate(body, {
 		abortEarly: false,
 		errors: { escapeHtml: true }
 	});
@@ -78,62 +78,64 @@ router.get("/:id/album", UserAccess, async (ctx: ParameterizedContext) => {
 		const n_page_query = await db.query(`
 			SELECT COUNT(*) as count
 			FROM
-			(SELECT
-			ALBUMS.album_id, metadata.file_id, ALBUMS.albumname, metadata.filename,
-			metadata.type, metadata.bytes, metadata.d_count, metadata.v_count, metadata.create_date
+			(SELECT DISTINCT
+				t1.album_id, t1.title as albumname, SUM(metadata.bytes) as bytes,
+				t1.d_count, t1.v_count, t1.protected, t1.hidden
 			FROM
-			(SELECT
-			album_file.file_id, album_file.album_id, album.title as albumname
-			FROM album_file
-			INNER JOIN album
-			ON album_file.album_id = album.album_id
-			WHERE
-			((album.deleted=false AND album.hidden=false AND album.protected=false)
-			AND (album.title LIKE "%${value.albumname}%"))) AS ALBUMS
-			INNER JOIN metadata
-			ON ALBUMS.file_id = metadata.file_id
-			WHERE metadata.deleted = false) AS FILE_LIST
-			WHERE(FILE_LIST.filename LIKE "%${value.filename}%" OR FILE_LIST.type LIKE "%${value.type}%")
-			ORDER BY ${value.sort} ${value.direction}`
-		);
+			(SELECT DISTINCT 
+				album_user.user_id, album_file.file_id, album.*
+				FROM album
+			RIGHT JOIN album_file
+			ON album.album_id = album_file.album_id
+			RIGHT JOIN album_user
+			ON album.album_id = album_user.album_id
+			WHERE album.deleted = false AND album_user.user_id = "${ctx.state.user_id}") as t1
+			LEFT JOIN metadata
+			ON t1.file_id = metadata.file_id
+			GROUP BY t1.album_id) as t2
+		`);
 
 		const n_page = Math.ceil(n_page_query[0].count / value.limit);
 		const c_page = n_page > 0 ? value.page > n_page ? n_page : value.page : 1;
-		
+				
 		const s_query = await db.query(`
-			SELECT
-			FILE_LIST.*
+			SELECT t2.* FROM
+			(SELECT DISTINCT
+				t1.album_id, t1.title as albumname, SUM(metadata.bytes) as bytes,
+				t1.d_count, t1.v_count, t1.protected, t1.hidden
 			FROM
-			(SELECT
-			ALBUMS.album_id, metadata.file_id, ALBUMS.albumname, metadata.filename,
-			metadata.type, metadata.bytes, metadata.d_count, metadata.v_count, metadata.create_date
-			FROM
-			(SELECT
-			album_file.file_id, album_file.album_id, album.title as albumname
-			FROM album_file
-			INNER JOIN album
-			ON album_file.album_id = album.album_id
-			WHERE
-			((album.deleted=false AND album.hidden=false AND album.protected=false)
-			AND (album.title LIKE "%${value.albumname}%"))) AS ALBUMS
-			INNER JOIN metadata
-			ON ALBUMS.file_id = metadata.file_id
-			WHERE metadata.deleted = false) AS FILE_LIST
-			WHERE (FILE_LIST.filename LIKE "%${value.filename}%" OR FILE_LIST.type LIKE "%${value.type}%")
-			LIMIT ${value.limit} OFFSET ${value.skip  * (c_page - 1)}`
-		);
+			(SELECT DISTINCT 
+				album_user.user_id, album_file.file_id, album.*
+				FROM album
+			RIGHT JOIN album_file
+			ON album.album_id = album_file.album_id
+			RIGHT JOIN album_user
+			ON album.album_id = album_user.album_id
+			WHERE album.deleted = false AND album_user.user_id = "${ctx.state.user_id}") as t1
+			LEFT JOIN metadata
+			ON t1.file_id = metadata.file_id
+			WHERE t1.title LIKE "%${value.albumname}%"
+			GROUP BY t1.album_id) AS t2
+			ORDER BY ${value.sort} ${value.direction}
+			LIMIT ${value.limit} OFFSET ${value.skip  * (c_page - 1)}
+		`);
 		
+		ctx.body = {
+			n_page,
+			c_page,
+			page_data: s_query,
+		};
 		
 		return;
 	}
 });
 
-router.get("/:id/file", async (ctx: ParameterizedContext) => {
+router.post("/:id/file", UserAccess, async (ctx: ParameterizedContext) => {
 
 	const body = ctx.request.body;
 	const db: Connection = ctx.mysql;
 
-	const { value, error } = PublicSearchSchema.validate(body, {
+	const { value, error } = PrivateFileSearchSchema.validate(body, {
 		abortEarly: false,
 		errors: { escapeHtml: true }
 	});
@@ -143,9 +145,49 @@ router.get("/:id/file", async (ctx: ParameterizedContext) => {
 		error.details.forEach(e => { (ctx.body as any).errors.push(e.message); });
 		return;
 	} else {
-		console.log("hello");
-		
-		
+		const n_page_query = await db.query(`
+			SELECT COUNT(*) as count
+			FROM
+			(SELECT t2.album_id, t2.file_id, t2.filename, t2.type, t2.bytes, t2.d_count, t2.v_count, t2.create_date
+			FROM
+				(SELECT album_user.user_id, t1.*
+				FROM
+					(SELECT album_file.album_id, metadata.*
+					FROM metadata
+					LEFT JOIN album_file
+					ON metadata.file_id = album_file.file_id
+					WHERE metadata.deleted = false AND metadata.filename LIKE "%${value.filename}%") AS t1
+				LEFT JOIN album_user
+				ON t1.album_id = album_user.album_id) AS t2
+			WHERE t2.user_id = "${validator.escape(ctx.params.id)}") as t3
+		`);
+
+		const n_page = Math.ceil(n_page_query[0].count / value.limit);
+		const c_page = n_page > 0 ? value.page > n_page ? n_page : value.page : 1;
+
+		const s_query = await db.query(`
+			SELECT t2.album_id, t2.file_id, t2.filename, t2.type, t2.bytes, t2.d_count, t2.v_count, t2.create_date
+			FROM
+				(SELECT album_user.user_id, t1.*
+				FROM
+					(SELECT album_file.album_id, metadata.*
+					FROM metadata
+					LEFT JOIN album_file
+					ON metadata.file_id = album_file.file_id
+					WHERE metadata.deleted = false AND metadata.filename LIKE "%${value.filename}%") AS t1
+				LEFT JOIN album_user
+				ON t1.album_id = album_user.album_id) AS t2
+			WHERE t2.user_id = "${validator.escape(ctx.params.id)}"
+			ORDER BY ${value.sort} ${value.direction}
+			LIMIT ${value.limit} OFFSET ${value.skip  * (c_page - 1)}
+		`);
+
+		ctx.body = {
+			n_page,
+			c_page,
+			page_data: s_query,
+		};
+
 		return;
 	}
 });
