@@ -15,6 +15,8 @@ import { UserState } from "../lib/types";
 import { SessionModel } from "../model/mysql";
 import { Connection } from "typeorm";
 
+import validator from "validator";
+
 export default async (ctx: ParameterizedContext, next: any) => {
 
 	const db: Connection = ctx.mysql;
@@ -26,7 +28,7 @@ export default async (ctx: ParameterizedContext, next: any) => {
 		RIGHT JOIN album_file
 		ON metadata.file_id = album_file.file_id
 		WHERE
-			metadata.file_id = "${ctx.params.id}" AND
+			metadata.file_id = "${validator.escape(ctx.params.id)}" AND
 			metadata.deleted = false) AS t1
 		RIGHT JOIN album_user
 		ON t1.album_id = album_user.album_id) AS t2
@@ -41,7 +43,7 @@ export default async (ctx: ParameterizedContext, next: any) => {
 	`);
 	const file = await db.query(`
 		SELECT * FROM metadata
-		WHERE metadata.file_id = "${ctx.params.id}"
+		WHERE metadata.file_id = "${validator.escape(ctx.params.id)}"
 	`);
 			
 	if(file.length) {

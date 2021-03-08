@@ -12,7 +12,7 @@ import Router from "koa-router";
 
 import { Bcrypt, HttpStatus } from "../../lib";
 import { SessionResponce, UploadRequest } from "../../lib/types";
-import { UserAccess } from "../../middleware";
+import { AlbumAccess, UserAccess } from "../../middleware";
 import { FileUpdateSchema, LoginSchema, PublicSearchSchema, RegisterSchema, UploadSchema, URLUploadSchema, UserUpdateSchema } from "../../schema";
 
 import { AlbumMetadataModel, AlbumModel, AlbumUserModel, MetadataModel, SessionModel, UserModel } from "../../model/mysql";
@@ -47,7 +47,7 @@ router.get("/:id", async (ctx: ParameterizedContext) => {
 	const user = await user_collection
 	.findOne({
 		where: {
-			user_id: ctx.params.id,
+			user_id: validator.escape(ctx.params.id),
 		},
 		select: [ "user_id", "username", "banned", "admin" ]
 	});
@@ -60,6 +60,96 @@ router.get("/:id", async (ctx: ParameterizedContext) => {
 	}
 });
 
+router.get("/:id/album", UserAccess, async (ctx: ParameterizedContext) => {
+
+	const body = ctx.request.body;
+	const db: Connection = ctx.mysql;
+
+	const { value, error } = PublicSearchSchema.validate(body, {
+		abortEarly: false,
+		errors: { escapeHtml: true }
+	});
+	if(error) {
+		ctx.status = HttpStatus.CLIENT_ERROR.BAD_REQUEST.status;
+		ctx.body = { errors: [] };
+		error.details.forEach(e => { (ctx.body as any).errors.push(e.message); });
+		return;
+	} else {
+		const n_page_query = await db.query(`
+			SELECT COUNT(*) as count
+			FROM
+			(SELECT
+			ALBUMS.album_id, metadata.file_id, ALBUMS.albumname, metadata.filename,
+			metadata.type, metadata.bytes, metadata.d_count, metadata.v_count, metadata.create_date
+			FROM
+			(SELECT
+			album_file.file_id, album_file.album_id, album.title as albumname
+			FROM album_file
+			INNER JOIN album
+			ON album_file.album_id = album.album_id
+			WHERE
+			((album.deleted=false AND album.hidden=false AND album.protected=false)
+			AND (album.title LIKE "%${value.albumname}%"))) AS ALBUMS
+			INNER JOIN metadata
+			ON ALBUMS.file_id = metadata.file_id
+			WHERE metadata.deleted = false) AS FILE_LIST
+			WHERE(FILE_LIST.filename LIKE "%${value.filename}%" OR FILE_LIST.type LIKE "%${value.type}%")
+			ORDER BY ${value.sort} ${value.direction}`
+		);
+
+		const n_page = Math.ceil(n_page_query[0].count / value.limit);
+		const c_page = n_page > 0 ? value.page > n_page ? n_page : value.page : 1;
+		
+		const s_query = await db.query(`
+			SELECT
+			FILE_LIST.*
+			FROM
+			(SELECT
+			ALBUMS.album_id, metadata.file_id, ALBUMS.albumname, metadata.filename,
+			metadata.type, metadata.bytes, metadata.d_count, metadata.v_count, metadata.create_date
+			FROM
+			(SELECT
+			album_file.file_id, album_file.album_id, album.title as albumname
+			FROM album_file
+			INNER JOIN album
+			ON album_file.album_id = album.album_id
+			WHERE
+			((album.deleted=false AND album.hidden=false AND album.protected=false)
+			AND (album.title LIKE "%${value.albumname}%"))) AS ALBUMS
+			INNER JOIN metadata
+			ON ALBUMS.file_id = metadata.file_id
+			WHERE metadata.deleted = false) AS FILE_LIST
+			WHERE (FILE_LIST.filename LIKE "%${value.filename}%" OR FILE_LIST.type LIKE "%${value.type}%")
+			LIMIT ${value.limit} OFFSET ${value.skip  * (c_page - 1)}`
+		);
+		
+		
+		return;
+	}
+});
+
+router.get("/:id/file", async (ctx: ParameterizedContext) => {
+
+	const body = ctx.request.body;
+	const db: Connection = ctx.mysql;
+
+	const { value, error } = PublicSearchSchema.validate(body, {
+		abortEarly: false,
+		errors: { escapeHtml: true }
+	});
+	if(error) {
+		ctx.status = HttpStatus.CLIENT_ERROR.BAD_REQUEST.status;
+		ctx.body = { errors: [] };
+		error.details.forEach(e => { (ctx.body as any).errors.push(e.message); });
+		return;
+	} else {
+		console.log("hello");
+		
+		
+		return;
+	}
+});
+
 router.get("/username/:id", async (ctx: ParameterizedContext) => {
 	const body: any = ctx.request.body;
 	const db: Connection = ctx.mysql;
@@ -68,7 +158,7 @@ router.get("/username/:id", async (ctx: ParameterizedContext) => {
 	const user = await user_collection
 	.findOne({
 		where: {
-			username: ctx.params.id,
+			username: validator.escape(ctx.params.id),
 		},
 		select: [ "user_id", "username", "banned", "admin" ]
 	});
@@ -96,7 +186,7 @@ router.patch("/:id", UserAccess, async (ctx: ParameterizedContext) => {
 		error.details.forEach(e => { (ctx.body as any).errors.push(e.message); });
 		return;
 	} else {
-		const user = await db.getRepository(UserModel).findOne({ user_id: ctx.params.id });
+		const user = await db.getRepository(UserModel).findOne({ user_id: validator.escape(ctx.params.id) });
 		if(!user) {
 			ctx.status = HttpStatus.CLIENT_ERROR.NOT_FOUND.status;
 			ctx.body = HttpStatus.CLIENT_ERROR.NOT_FOUND.message;
@@ -138,8 +228,8 @@ router.delete("/:id", UserAccess, async (ctx: ParameterizedContext) => {
 	const body: any = ctx.request.body;
 	const db: Connection = ctx.mysql;
 
-	if(ctx.params.id) {
-		await db.manager.getRepository(UserModel).delete({ user_id: ctx.params.id })
+	if(validator.escape(ctx.params.id)) {
+		await db.manager.getRepository(UserModel).delete({ user_id: validator.escape(ctx.params.id) })
 		.catch(() => {
 			ctx.status = HttpStatus.SERVER_ERROR.INTERNAL.status;
 			ctx.body = HttpStatus.SERVER_ERROR.INTERNAL.message;

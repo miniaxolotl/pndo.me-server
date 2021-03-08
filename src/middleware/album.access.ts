@@ -15,6 +15,8 @@ import { UserState } from "../lib/types";
 import { AlbumUserModel, SessionModel, UserModel } from "../model/mysql";
 import { Connection } from "typeorm";
 
+import validator from "validator";
+
 export default async (ctx: ParameterizedContext, next: any) => {
 	const db: Connection = ctx.mysql;
 	
@@ -26,7 +28,7 @@ export default async (ctx: ParameterizedContext, next: any) => {
 		RIGHT JOIN album_user
 		ON t1.album_id = album_user.album_id
 		WHERE 
-			t1.album_id = "${ctx.params.id}") AS t2
+			t1.album_id = "${validator.escape(ctx.params.id)}") AS t2
 		LEFT JOIN album
 		ON t2.album_id = album.album_id
 		WHERE 
@@ -39,7 +41,7 @@ export default async (ctx: ParameterizedContext, next: any) => {
 	`);
 	const album = await db.query(`
 		SELECT * FROM album
-		WHERE album.album_id = "${ctx.params.id}"
+		WHERE album.album_id = "${validator.escape(ctx.params.id)}"
 	`);
 			
 	if(album.length) {

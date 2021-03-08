@@ -46,8 +46,8 @@ router.all("/:id", FileAccess, async (ctx: ParameterizedContext) => {
 	
 	const file_collection = db.manager.getRepository(MetadataModel);
 
-	const file_path = path.join(`${config.dir.data}/data`, ctx.params.id);
-	const file_data = await file_collection.findOne({ file_id: ctx.params.id });
+	const file_path = path.join(`${config.dir.data}/data`, validator.escape(ctx.params.id));
+	const file_data = await file_collection.findOne({ file_id: validator.escape(ctx.params.id) });
 	if(!file_data) {
 		ctx.status = HttpStatus.CLIENT_ERROR.NOT_FOUND.status;
 		ctx.body = HttpStatus.CLIENT_ERROR.NOT_FOUND.message;

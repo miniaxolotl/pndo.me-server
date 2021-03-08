@@ -134,11 +134,6 @@ router.post("/", async (ctx: ParameterizedContext) => {
 							album_metatdata.metadata = metadata;
 							await transaction.save(album_metatdata);
 
-							const album_user = new AlbumUserModel();
-							album_user.album = album;
-							album_user.user = ctx.state.user_id;
-							await transaction.save(album_user);
-
 							fs.unlinkSync(temp_path);
 							if(album_metatdata) {
 								(ctx.body as { album: {}, files: any[] }).files.push(metadata);
@@ -152,6 +147,11 @@ router.post("/", async (ctx: ParameterizedContext) => {
 						in_stream.pipe(out_stream);
 					});
 				}
+
+				const album_user = new AlbumUserModel();
+				album_user.album = album;
+				album_user.user = ctx.state.user_id;
+				await transaction.save(album_user);
 			}
 		});
 	}
@@ -276,11 +276,6 @@ router.post("/url", async (ctx: ParameterizedContext) => {
 								album_metatdata.metadata = metadata;
 								await transaction.save(album_metatdata);
 
-								const album_user = new AlbumUserModel();
-								album_user.album = album;
-								album_user.user = ctx.state.user_id;
-								await transaction.save(album_user);
-
 								if(album_metatdata) {
 									(ctx.body as { album: {}, files: any[] }).files.push(metadata);
 									resolve(null);
@@ -293,6 +288,11 @@ router.post("/url", async (ctx: ParameterizedContext) => {
 						}).on('error', reject);
 					});
 				}
+
+				const album_user = new AlbumUserModel();
+				album_user.album = album;
+				album_user.user = ctx.state.user_id;
+				await transaction.save(album_user);
 			}
 		});
 	}
@@ -305,9 +305,8 @@ router.get("/:id", FileAccess, async (ctx: ParameterizedContext) => {
 	const file_data = await db.query(`
 		SELECT * FROM album_file
 		JOIN metadata 
-		ON album_file.file_id = metadata.file_id AND album_file.file_id = ?
-		WHERE metadata.deleted = false`,
-		[ ctx.params.id ]
+		ON album_file.file_id = metadata.file_id AND album_file.file_id = "${validator.escape(ctx.params.id)}"
+		WHERE metadata.deleted = false`
 	);
 	if(!file_data || !file_data.length) {
 		ctx.status = HttpStatus.CLIENT_ERROR.NOT_FOUND.status;
@@ -340,9 +339,10 @@ router.get("/:id/:filename", FileAccess, async (ctx: ParameterizedContext) => {
 	const file_data = await db.query(`
 		SELECT * FROM album_file
 		JOIN metadata 
-		ON album_file.file_id = metadata.file_id AND album_file.file_id = ? AND metadata.filename = ?
-		WHERE metadata.deleted = false`,
-		[ ctx.params.id, ctx.params.filename ]
+		ON
+			album_file.file_id = metadata.file_id AND album_file.file_id = "${validator.escape(ctx.params.id)}" AND
+			metadata.filename = "${validator.escape(ctx.params.filename)}"
+		WHERE metadata.deleted = false`
 	);
 	if(!file_data || !file_data.length) {
 		ctx.status = HttpStatus.CLIENT_ERROR.NOT_FOUND.status;
@@ -383,7 +383,7 @@ router.patch("/:id", FileAccess, async (ctx: ParameterizedContext) => {
 		error.details.forEach(e => { (ctx.body as any).errors.push(e.message); });
 		return;
 	} else {
-		const file = await db.getRepository(MetadataModel).findOne({ file_id: ctx.params.id });
+		const file = await db.getRepository(MetadataModel).findOne({ file_id: validator.escape(ctx.params.id) });
 		if(!file) {
 			ctx.status = HttpStatus.CLIENT_ERROR.NOT_FOUND.status;
 			ctx.body = HttpStatus.CLIENT_ERROR.NOT_FOUND.message;
@@ -394,7 +394,7 @@ router.patch("/:id", FileAccess, async (ctx: ParameterizedContext) => {
 					const file_u = {
 						...new MetadataModel(),
 						...value,
-						file_id: ctx.params.id
+						file_id: validator.escape(ctx.params.id)
 					};
 					await transaction.getRepository(MetadataModel).save({
 						...file,
@@ -428,8 +428,7 @@ router.delete("/:id", FileAccess, async (ctx: ParameterizedContext) => {
 	const file_data = await db.query(`
 		SELECT * FROM album_file
 		JOIN metadata
-		ON album_file.file_id = metadata.file_id AND album_file.file_id = ?`,
-		[ ctx.params.id ]
+		ON album_file.file_id = metadata.file_id AND album_file.file_id = ${validator.escape(ctx.params.id)}`
 	);
 	if(!file_data.length) {
 		ctx.status = HttpStatus.CLIENT_ERROR.NOT_FOUND.status;
@@ -439,9 +438,8 @@ router.delete("/:id", FileAccess, async (ctx: ParameterizedContext) => {
 		const d_query = await db.query(`
 			UPDATE metadata
 			JOIN album_file
-			ON album_file.file_id = metadata.file_id AND album_file.file_id = ?
-			SET metadata.deleted = true`,
-			[ ctx.params.id ]
+			ON album_file.file_id = metadata.file_id AND album_file.file_id = "${validator.escape(ctx.params.id)}"
+			SET metadata.deleted = true`
 		);
 		if(d_query.changedRows > 0) {
 			ctx.status = HttpStatus.SUCCESS.OK.status;

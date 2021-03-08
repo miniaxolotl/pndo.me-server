@@ -12,6 +12,7 @@ import Router from "koa-router";
 
 import { Bcrypt, HttpStatus } from "../../lib";
 import { SessionResponce, UploadRequest } from "../../lib/types";
+import { AlbumAccess } from "../../middleware";
 import { LoginSchema, PublicSearchSchema, RegisterSchema, UploadSchema, URLUploadSchema } from "../../schema";
 
 import { AlbumMetadataModel, AlbumModel, MetadataModel, SessionModel, UserModel } from "../../model/mysql";

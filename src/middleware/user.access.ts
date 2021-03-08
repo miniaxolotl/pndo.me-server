@@ -15,10 +15,12 @@ import { UserState } from "../lib/types";
 import { AlbumUserModel, SessionModel, UserModel } from "../model/mysql";
 import { Connection } from "typeorm";
 
+import validator from "validator";
+
 export default async (ctx: ParameterizedContext, next: any) => {
 	const db: Connection = ctx.mysql;
 	
-	if(!(ctx.state.user_id as string).localeCompare(ctx.params.id) || ctx.state.admin) {
+	if(!(ctx.state.user_id as string).localeCompare(validator.escape(ctx.params.id)) || ctx.state.admin) {
 		await next();
 	} else {
 		ctx.status = HttpStatus.CLIENT_ERROR.UNAUTHORIZED.status;

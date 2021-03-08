@@ -51,7 +51,7 @@ router.get([ "/file/:id", "/f/:id" ], async (ctx: ParameterizedContext) => {
 		FROM metadata
 		LEFT JOIN album_file
 		ON metadata.file_id = album_file.file_id
-		WHERE album_file.file_id = "${ctx.params.id}"
+		WHERE album_file.file_id = "${validator.escape(ctx.params.id)}"
 	`);
 	if(!file_data.length) {
 		ctx.status = HttpStatus.CLIENT_ERROR.NOT_FOUND.status;
@@ -79,7 +79,7 @@ router.get([ "/album/:id", "/a/:id" ], async (ctx: ParameterizedContext) => {
 				ON album_file.album_id = album.album_id) AS t1
 			RIGHT JOIN metadata
 			ON t1.file_id = metadata.file_id
-			WHERE t1.album_id = "${ctx.params.id}") AS t2
+			WHERE t1.album_id = "${validator.escape(ctx.params.id)}") AS t2
 		GROUP BY t2.album_id
 	`);
 	const file_list = await db.query(`
@@ -90,7 +90,7 @@ router.get([ "/album/:id", "/a/:id" ], async (ctx: ParameterizedContext) => {
 		ON album_file.album_id = album.album_id) AS t1
 		RIGHT JOIN metadata
 		ON t1.file_id = metadata.file_id
-		WHERE t1.album_id = "${ctx.params.id}") AS t2
+		WHERE t1.album_id = "${validator.escape(ctx.params.id)}") AS t2
 		GROUP BY t2.file_id
 	`);
 	
