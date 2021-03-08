@@ -71,8 +71,7 @@ router.all("/", async (ctx: ParameterizedContext) => {
 			INNER JOIN metadata
 			ON ALBUMS.file_id = metadata.file_id
 			WHERE metadata.deleted = false) AS FILE_LIST
-			WHERE(FILE_LIST.filename LIKE "%${value.filename}%" OR FILE_LIST.type LIKE "%${value.type}%")
-			ORDER BY ${value.sort} ${value.direction}`
+			WHERE(FILE_LIST.filename LIKE "%${value.filename}%" OR FILE_LIST.type LIKE "%${value.type}%")`
 		);
 
 		const n_page = Math.ceil(n_page_query[0].count / value.limit);
@@ -98,8 +97,9 @@ router.all("/", async (ctx: ParameterizedContext) => {
 			ON ALBUMS.file_id = metadata.file_id
 			WHERE metadata.deleted = false) AS FILE_LIST
 			WHERE (FILE_LIST.filename LIKE "%${value.filename}%" OR FILE_LIST.type LIKE "%${value.type}%")
-			LIMIT ${value.limit} OFFSET ${value.skip  * (c_page - 1)}`
-		);
+			ORDER BY ${value.sort} ${value.direction}
+			LIMIT ${value.limit} OFFSET ${value.skip  * (c_page - 1)}
+		`);
 
 		ctx.body = {
 			n_page,

@@ -86,10 +86,6 @@ router.all("/:id", FileAccess, async (ctx: ParameterizedContext) => {
 
 					const file_stream = fs.createReadStream(file_path)
 					file_stream.on("error", error => void(null));
-					file_stream.on("oncomplete", () => {
-						console.log("13");
-						
-					})
 
 					ctx.status = 200;
 

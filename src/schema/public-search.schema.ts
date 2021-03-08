@@ -5,7 +5,7 @@ const PublicSearchSchema = object({
 	sort: joi.string()
 	.optional()
 	.insensitive()
-	.valid('album', 'filename', 'type', 'bytes', 'd_count', 'v_count', 'create_date')
+	.valid('albumname', 'filename', 'type', 'bytes', 'd_count', 'v_count', 'create_date')
 	.default('filename'),
 
 	direction: joi.string()
