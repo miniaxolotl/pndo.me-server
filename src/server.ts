@@ -120,7 +120,7 @@ app.use(KoaJSON({ pretty: false, param: 'pretty' }));
 
 app.use(Body({
 	formidable: {
-		maxFileSize: 2**32,
+		maxFileSize: parseInt(config.MAX_FILE),
 		uploadDir: `${config.dir.data}/temp`,
 		multiples: true,
 	},
