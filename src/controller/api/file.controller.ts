@@ -75,7 +75,7 @@ router.post("/", async (ctx: ParameterizedContext) => {
 					album = new AlbumModel();
 					album.album_id = uid();
 					album.protected = value.protected && ctx.state.user_id ? value.protected : false;
-					album.hidden = album.protected || album.hidden ? true : false;
+					album.hidden = album.protected || value.hidden ? true : false;
 					album.title = uid(4);
 					album.password = value.password ? await Bcrypt.gen_hash(value.password) : null!;
 					await transaction.save(album);
