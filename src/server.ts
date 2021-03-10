@@ -114,7 +114,10 @@ app.use(Session({
 	app
 ));
 
-app.use(CORS({ origin: "*" }));
+app.use(CORS({
+	origin: '*',
+	credentials: true
+}));
 
 app.use(KoaJSON({ pretty: false, param: 'pretty' }));
 
@@ -149,7 +152,7 @@ app.use(Body({
 	{ /* api */
 		const api: Router = new Router();
 
-		api.use("/auth", V1AuthController.routes());
+		api.use("/auth", AuthController.routes());
 		api.use([
 			"/album",
 			"/a"
