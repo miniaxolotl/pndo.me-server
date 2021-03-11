@@ -1,7 +1,7 @@
-import * as api from './api';
-import authentication from './authentication.controller';
+import * as Api from './api';
+import AuthController from './auth.controller';
 
 export {
-	api,
-	authentication,
+	Api,
+	AuthController
 };

@@ -1,15 +1,17 @@
-import UserController from "./user.controller"
-import CommentController from "./comment.controller"
+import AlbumController from "./album.controller"
 import FileController from "./file.controller"
-import StreamController from "./stream.controller"
 import InfoController from "./info.controller"
 import MetaController from "./meta.controller"
+import SearchController from "./search.controller"
+import StreamController from "./stream.controller"
+import UserController from "./user.controller"
 
 export {
-	UserController,
-	CommentController,
+	AlbumController,
 	FileController,
-	StreamController,
 	InfoController,
 	MetaController,
+	SearchController,
+	StreamController,
+	UserController,
 };

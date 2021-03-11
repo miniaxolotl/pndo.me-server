@@ -1,15 +1,19 @@
 {
 	"port": 8080,
 	"production": false,
-	"public_dir": "./res/public",
-	"data_dir": "./res/data",
+	"MAX_FILE": "(2**20)*500",
+	"dir": {
+		"public": "./res/public",
+		"data": "~/pndo.me-data"
+	},
 	"whitelist": [
 		"https://localhost",
 		"http://localhost"
 	],
 	"crypt": {
-		"secret": "super-duper-secret",
-		"salt_rounds": 7
+		"secrets": [ "super-duper-secret" ],
+		"key": "super-duper-secret",
+		"salt_rounds": 8
 	},
 	"db": {
 		"mongo": {

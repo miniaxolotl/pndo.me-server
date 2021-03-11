@@ -8,21 +8,31 @@
  */
 
 import { ParameterizedContext } from "koa";
-import Router from 'koa-router';
+import Router from "koa-router";
 
-import fs from "fs";
-import path from "path";
+import { Bcrypt, HttpStatus } from "../../lib";
+import { SessionResponce, UploadRequest } from "../../lib/types";
+import { FileAccess } from "../../middleware";
+import { FileUpdateSchema, LoginSchema, PublicSearchSchema, RegisterSchema, UploadSchema, URLUploadSchema } from "../../schema";
 
+import { AlbumMetadataModel, AlbumModel, AlbumUserModel, MetadataModel, SessionModel, UserModel } from "../../model/mysql";
 import { Connection } from "typeorm";
 
-import { serverError, resourceNotFound } from "../../util/status";
+import fetch from "node-fetch";
+import crypto from "crypto";
+import stream from "stream";
+import path, { join } from "path";
+import zlib from "zlib";
+import { spawn } from "child_process";
+import fs from "fs";
 
-import { FileTimestampModel } from "../../model/mongo";
-import { MetadataModel } from "../../model/mysql";
-
-import { jwt } from "../../middleware";
+import FileType from 'file-type';
+import { uid } from 'uid/secure';
+import { v4 as uuid } from 'uuid';
 
 import config from "../../../res/config.json";
+import validator from "validator";
+
 
 const router: Router = new Router();
 
@@ -30,96 +40,62 @@ const router: Router = new Router();
  * ANCHOR routes
  ************************************************/
 
-router.all("/:id", jwt.identify, async (ctx: ParameterizedContext) => {
+router.all("/:id", FileAccess, async (ctx: ParameterizedContext) => {
 
 	const db: Connection = ctx.mysql;
 	
 	const file_collection = db.manager.getRepository(MetadataModel);
 
-	const file_path = path.join(config.data_dir, ctx.params.id);
-	const file_data = await file_collection.findOne({ file_id: ctx.params.id });
+	const file_path = path.join(`${config.dir.data}/data`, validator.escape(ctx.params.id));
+	const file_data = await file_collection.findOne({ file_id: validator.escape(ctx.params.id) });
 	if(!file_data) {
-		ctx.status = resourceNotFound.status;
-		ctx.body = resourceNotFound.message;
+		ctx.status = HttpStatus.CLIENT_ERROR.NOT_FOUND.status;
+		ctx.body = HttpStatus.CLIENT_ERROR.NOT_FOUND.message;
+		return;
 	} else {
-		try {
-			/* check if file exists on filesystem */
-			fs.statSync(file_path);
-		
-			const range = ctx.headers.range;
+			if(fs.existsSync(file_path)) {
+				fs.statSync(file_path);
 			
-			if(range) {
-				const parts = range.replace(/bytes=/, "").split("-");
-				const start = parseInt(parts[0], 10);
-				const end = parts[1] ? parseInt(parts[1], 10) : file_data.bytes - 1;
-				const chunk_size = (end-start) + 1;
-				
-				if(fs.existsSync(file_path)) {
-					const file_stream
-						= fs.createReadStream(file_path, {start, end});
+				const range = ctx.headers.range;
+				if(range) {
+					const parts = range.replace(/bytes=/, "").split("-");
+					const start = parseInt(parts[0], 10);
+					const end = parts[1] ? parseInt(parts[1], 10) : file_data.bytes - 1;
+					const chunk_size = (end-start) + 1;
 					
-				{ /* set headers */
+					const file_stream = fs.createReadStream(file_path, {start, end});
+						
 					ctx.response.set("connection", "keep-alive");
 					ctx.response.set("content-type", file_data.type);
 					ctx.response.set("content-length", chunk_size.toString());
 					ctx.response.set("accept-ranges", "bytes");
-					ctx.response.set("content-range",
-					`bytes ${start}-${end}/${file_data.bytes}`);
-					ctx.response.set("connection", "keep-alive");
-					ctx.response.set("content-disposition",
-					"inline; filename=\""+file_data.filename+'"');
-				}
+					ctx.response.set("content-range", `bytes ${start}-${end}/${file_data.bytes}`);
+					ctx.response.set("content-disposition", `inline; filename="${file_data.filename}"`);
 				
-				file_stream.on("error", e => void(0));
-				ctx.status = 206;
-				ctx.body = file_stream;
-				} else {
-					ctx.status = resourceNotFound.status;
-					ctx.body = resourceNotFound.message;
-				}
-			} else {
-				{ /* update stats */
-					const update_query = {
-						downloads: file_data.downloads ? ++file_data.downloads : 1,
-					}
-					await file_collection
-					.update({ file_id: ctx.params.id }, update_query);
-
-					const file_timestamp_collection
-					= ctx.mongo.manager.getRepository(FileTimestampModel);
-
-					const file_timestamp = new FileTimestampModel();
-					file_timestamp.file_id = ctx.params.id;
-					file_timestamp.user_id = ctx.state.profile_id;
-
-					await file_timestamp_collection
-					.save(file_timestamp)
-					.catch((err) => {
-						// do nothing
-					});
-				}	
-				
-				{ /* set headers */
-					ctx.response.set("connection", "keep-alive");
-					ctx.response.set("content-length", file_data.bytes.toString());
-					ctx.response.set("content-type", file_data.type);
-					ctx.response.set("content-disposition",
-					"inline; filename=\""+file_data.filename+'"');
-				}
-				
-				if(fs.existsSync(file_path)) {
-					const file_stream = fs.createReadStream(file_path)
 					file_stream.on("error", e => void(0));
-					ctx.status = 200;
+					ctx.status = 206;
 					ctx.body = file_stream;
+					
 				} else {
-					ctx.status = resourceNotFound.status;
-					ctx.body = resourceNotFound.message;
+					{ /* set headers */
+						ctx.response.set("connection", "keep-alive");
+						ctx.response.set("content-length", file_data.bytes.toString());
+						ctx.response.set("content-type", file_data.type);
+						ctx.response.set("content-disposition", `inline; filename="${file_data.filename}"`);
+					}
+
+					const file_stream = fs.createReadStream(file_path)
+					file_stream.on("error", error => void(null));
+
+					ctx.status = 200;
+
+					ctx.body = file_stream.pipe(new stream.PassThrough());
+					return;
 				}
-			}
-		} catch(err) {
-			ctx.status = resourceNotFound.status;
-			ctx.body = resourceNotFound.message;
+		} else {
+			ctx.status = HttpStatus.SERVER_ERROR.INTERNAL.status;
+			ctx.body = HttpStatus.SERVER_ERROR.INTERNAL.message;
+			return;
 		}
 	}
 });

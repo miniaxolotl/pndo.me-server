@@ -1,9 +1,6 @@
-res/public
-res/data
+# Other
 
 config.json
-build/
-data/
 
 # Logs
 logs

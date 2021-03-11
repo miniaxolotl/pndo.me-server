@@ -1,12 +1,15 @@
 import joi, { object } from "joi";
 
-const UploadSchema = object({
+const URLUploadSchema = object({
+	url: joi.array()
+	.required(),
+
 	password: joi.string()
 	.min(3),
 
 	album: joi.string()
 	.default(null),
-
+	
 	protected: joi.boolean()
 	.required(),
 
@@ -14,4 +17,4 @@ const UploadSchema = object({
 	.required(),
 });
 
-export default UploadSchema;
+export default URLUploadSchema;

@@ -1,0 +1,6 @@
+apps:
+  - script              : dist/src/server.js
+    name                : pndome-server
+    watch               : true
+    instances           : 2
+    exec_mode           : cluster

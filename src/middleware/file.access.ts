@@ -1,107 +1,62 @@
 /**
- * jwt.authenticate.ts
- * Verify the user data in a jwt is valid. 
+ * auth.controller.ts
+ * Controller for handling user authentication.
  * Notes:
  * - N/A
  * @author Elias Mawa <elias@emawa.io>
  * Created 20-04-23
  */
 
+import { ParameterizedContext } from "koa";
+
+import { HttpStatus } from "../lib";
+import { UserState } from "../lib/types";
+
+import { SessionModel } from "../model/mysql";
 import { Connection } from "typeorm";
 
-import { MetadataModel, UserModel } from "../model/mysql";
+import validator from "validator";
 
-import { resourceNotFound, unauthorizedAccess } from "../util/status";
-import { TimedJWT } from "../util";
-
-import { UserData } from "types";
-import config from "../../res/config.json";
-
-const secret = config.crypt.secret;
-
-/**
- * Validates the specified authentication token.
- */
-export default async (ctx: any, next: any): Promise<void> => {
-	const authorization_key = (ctx.headers.authorization);
-	const state: UserData = {
-		username: null,
-		email: null,
-		user_id: null,
-		admin: null,
-		banned: null
-	};
+export default async (ctx: ParameterizedContext, next: any) => {
 
 	const db: Connection = ctx.mysql;
-	const user_collection = db.manager.getRepository(UserModel);
-	const file_collection = db.manager.getRepository(MetadataModel);
-
-	const file = await file_collection
-	.findOne({ file_id: ctx.params.id });
-
-	if(file && authorization_key) {
-		const token = authorization_key.split(' ')[1];
-
-		try {
-			const authorization = TimedJWT.verify(token, secret);
-			if(authorization) {
-				const payload: UserData = authorization.payload;
-				const user = await user_collection
-				.findOne({ username: payload.username! });
-
-				if(user && !user.banned) {
-					const state: UserData = {
-						username: user.username,
-						email: user.email,
-						user_id: user.user_id,
-						admin: user.admin,
-						banned: user.banned
-					};
-
-					if(file.protected) {
-						if(file.user_id == state.user_id || state.admin) {
-							ctx.state = state;
-							await next();
-						} else {
-							ctx.status = unauthorizedAccess.status;
-							ctx.body = unauthorizedAccess.message;
-						}
-					} else {
-						ctx.state = state;
-						await next();
-					}
-				} else {
-					ctx.status = unauthorizedAccess.status;
-					ctx.body = unauthorizedAccess.message;
-				}
-			} else {
-				ctx.status = unauthorizedAccess.status;
-				ctx.body = unauthorizedAccess.message;
-			}
-		} catch(err) {
-			if (file) {
-				if(file.protected) {
-					ctx.status = unauthorizedAccess.status;
-					ctx.body = unauthorizedAccess.message;
-				} else {
-					ctx.state = state;
-					await next();
-				}
-			} else {
-				ctx.status = unauthorizedAccess.status;
-				ctx.body = unauthorizedAccess.message;
-			}
-		}
-	} else if (file) {
-		if(file.protected) {
-			ctx.status = unauthorizedAccess.status;
-			ctx.body = unauthorizedAccess.message;
-		} else {
-			ctx.state = state;
+	
+	const access = await db.query(`
+		SELECT * FROM
+		(SELECT DISTINCT t1.album_id, t1.file_id, album_user.user_id FROM
+		(SELECT album_file.album_id, metadata.file_id from metadata
+		RIGHT JOIN album_file
+		ON metadata.file_id = album_file.file_id
+		WHERE
+			metadata.file_id = "${validator.escape(ctx.params.id)}" AND
+			metadata.deleted = false) AS t1
+		RIGHT JOIN album_user
+		ON t1.album_id = album_user.album_id) AS t2
+		LEFT JOIN album
+		ON t2.album_id = album.album_id
+		WHERE
+			album.deleted = false 
+			AND 
+			(t2.user_id = "${ctx.state.user_id}" OR 
+			t2.user_id = NULL OR
+			album.protected = false)
+	`);
+	const file = await db.query(`
+		SELECT * FROM metadata
+		WHERE metadata.file_id = "${validator.escape(ctx.params.id)}"
+	`);
+			
+	if(file.length) {
+		if(access.length || ctx.state.admin) {
 			await next();
+		} else {
+			ctx.status = HttpStatus.CLIENT_ERROR.UNAUTHORIZED.status;
+			ctx.body = HttpStatus.CLIENT_ERROR.UNAUTHORIZED.message;
+			return;
 		}
 	} else {
-		ctx.status = resourceNotFound.status;
-		ctx.body = resourceNotFound.message;
+		ctx.status = HttpStatus.CLIENT_ERROR.NOT_FOUND.status;
+		ctx.body = HttpStatus.CLIENT_ERROR.NOT_FOUND.message;
+		return;
 	}
-};
+}
