@@ -21,30 +21,20 @@ export default async (ctx: ParameterizedContext, next: any) => {
 	const db: Connection = ctx.mysql;
 	
 	const access = await db.query(`
-		SELECT album.album_id, t2.user_id, album.protected, album.hidden FROM
-		(SELECT album_user.album_id, album_user.user_id FROM
-		(SELECT DISTINCT album_file.album_id FROM metadata
-		FULL JOIN album_file) AS t1
-		RIGHT JOIN album_user
-		ON t1.album_id = album_user.album_id
-		WHERE 
-			t1.album_id = "${validator.escape(ctx.params.id)}") AS t2
-		LEFT JOIN album
-		ON t2.album_id = album.album_id
-		WHERE 
-			album.deleted = false 
-			AND 
-			(t2.user_id = "${ctx.state.user_id}" OR 
-			t2.user_id = NULL OR
-			album.protected = false)
-		GROUP BY t2.album_id, t2.user_id
+		SELECT * FROM
+			(SELECT album.album_id, album_user.user_id
+				FROM album_user
+				LEFT JOIN album
+				ON album.album_id = album_user.album_id
+				WHERE album.album_id = '${ctx.params.id}'
+				AND (
+					album.protected = false
+					OR album_user.user_id = NULL
+					OR album_user.user_id = '${ctx.state.user_id}')
+			) AS t1
 	`);
-	const album = await db.query(`
-		SELECT * FROM album
-		WHERE album.album_id = "${validator.escape(ctx.params.id)}"
-	`);
-			
-	if(album.length) {
+
+	if(access.length) {
 		if(access.length || ctx.state.admin) {
 			await next();
 		} else {

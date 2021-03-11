@@ -31,6 +31,8 @@ import { v4 as uuid } from 'uuid';
 
 import config from "../../../res/config.json";
 import validator from "validator";
+import fileAccess from "../../middleware/file.access";
+import albumAccess from "../../middleware/album.access";
 
 const router: Router = new Router();
 
@@ -38,7 +40,7 @@ const router: Router = new Router();
  * ANCHOR routes
  ************************************************/
 
-router.get([ "/file/:id", "/f/:id" ], async (ctx: ParameterizedContext) => {
+router.get([ "/file/:id", "/f/:id" ], fileAccess, async (ctx: ParameterizedContext) => {
 	
 	const db: Connection = ctx.mysql;
 
@@ -61,7 +63,7 @@ router.get([ "/file/:id", "/f/:id" ], async (ctx: ParameterizedContext) => {
 	}
 });
 
-router.get([ "/album/:id", "/a/:id" ], async (ctx: ParameterizedContext) => {
+router.get([ "/album/:id", "/a/:id" ], albumAccess, async (ctx: ParameterizedContext) => {
 	
 	const db: Connection = ctx.mysql;
 	
@@ -99,7 +101,7 @@ router.get([ "/album/:id", "/a/:id" ], async (ctx: ParameterizedContext) => {
 		ctx.body = HttpStatus.CLIENT_ERROR.NOT_FOUND.message;
 	} else {
 		ctx.body = {
-			album: album_data,
+			album: album_data[0],
 			files: file_list,
 		};
 	}
