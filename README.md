@@ -2,7 +2,7 @@
 
 **a clean, simple and private file hosting service.**
 
-![project logo|banner](res/repo/banner.svg "pndo.me banner")
+<img src="res/repo/banner.svg" height='300px'>
 
 <div align="center">
 
