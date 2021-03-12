@@ -1,4 +1,4 @@
-# **pndo.me (server)**
+# **pndo.me [server]**
 
 **a clean, simple and private file hosting service.**
 
