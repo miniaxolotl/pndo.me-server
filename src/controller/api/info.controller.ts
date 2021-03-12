@@ -47,14 +47,17 @@ router.get([ "/file/:id", "/f/:id" ], fileAccess, async (ctx: ParameterizedConte
 	const file_data = await db.query(`
 		SELECT 
 			album_file.album_id,
-			metadata.filename, metadata.type, metadata.bytes, 
+			metadata.filename, metadata.type, metadata.bytes, album.protected,
 			metadata.sha256, metadata.md5, metadata.d_count, metadata.v_count,
 			metadata.create_date
 		FROM metadata
 		LEFT JOIN album_file
 		ON metadata.file_id = album_file.file_id
+		LEFT JOIN album
+		ON album_file.album_id = album.album_id
 		WHERE album_file.file_id = "${validator.escape(ctx.params.id)}"
 	`);
+	
 	if(!file_data.length) {
 		ctx.status = HttpStatus.CLIENT_ERROR.NOT_FOUND.status;
 		ctx.body = HttpStatus.CLIENT_ERROR.NOT_FOUND.message;
@@ -81,7 +84,8 @@ router.get([ "/album/:id", "/a/:id" ], albumAccess, async (ctx: ParameterizedCon
 				ON album_file.album_id = album.album_id) AS t1
 			RIGHT JOIN metadata
 			ON t1.file_id = metadata.file_id
-			WHERE t1.album_id = "${validator.escape(ctx.params.id)}") AS t2
+			WHERE t1.album_id = "${validator.escape(ctx.params.id)}"
+			AND metadata.deleted = false) AS t2
 		GROUP BY t2.album_id
 	`);
 	const file_list = await db.query(`
@@ -92,7 +96,8 @@ router.get([ "/album/:id", "/a/:id" ], albumAccess, async (ctx: ParameterizedCon
 		ON album_file.album_id = album.album_id) AS t1
 		RIGHT JOIN metadata
 		ON t1.file_id = metadata.file_id
-		WHERE t1.album_id = "${validator.escape(ctx.params.id)}") AS t2
+		WHERE t1.album_id = "${validator.escape(ctx.params.id)}"
+		AND metadata.deleted = false) AS t2
 		GROUP BY t2.file_id
 	`);
 	

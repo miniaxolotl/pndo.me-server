@@ -83,18 +83,17 @@ router.post("/", async (ctx: ParameterizedContext) => {
 					album.password = undefined!;
 					album.deleted = undefined!;
 					album.id = undefined!;
-					album.d_count = undefined!;
-					album.v_count = undefined!;
+					// album.d_count = undefined!;
+					// album.v_count = undefined!;
 					(ctx.body as { album: {}, files: any[] }).album = album;
 				} else {
-					album = value.album;
-
+					album = album_data[0];
 					album.password = undefined!;
 					album.deleted = undefined!;
 					album.id = undefined!;
-					album.d_count = undefined!;
-					album.v_count = undefined!;
-					(ctx.body as { album: {}, files: any[] }).album = album_data[0];
+					// album_data.d_count = undefined!;
+					// album_data.v_count = undefined!;
+					(ctx.body as { album: {}, files: any[] }).album = album;
 				}
 
 				for(let i = 0; i < list.length; i++) {
@@ -428,7 +427,7 @@ router.delete("/:id", FileAccess, async (ctx: ParameterizedContext) => {
 	const file_data = await db.query(`
 		SELECT * FROM album_file
 		JOIN metadata
-		ON album_file.file_id = metadata.file_id AND album_file.file_id = ${validator.escape(ctx.params.id)}`
+		ON album_file.file_id = metadata.file_id AND album_file.file_id = "${validator.escape(ctx.params.id)}"`
 	);
 	if(!file_data.length) {
 		ctx.status = HttpStatus.CLIENT_ERROR.NOT_FOUND.status;
