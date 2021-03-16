@@ -134,7 +134,7 @@ router.post("/:id/file", UserAccess, async (ctx: ParameterizedContext) => {
 
 	const body = ctx.request.body;
 	const db: Connection = ctx.mysql;
-
+	
 	const { value, error } = PrivateFileSearchSchema.validate(body, {
 		abortEarly: false,
 		errors: { escapeHtml: true }
@@ -234,11 +234,13 @@ router.patch("/:id", UserAccess, async (ctx: ParameterizedContext) => {
 			ctx.body = HttpStatus.CLIENT_ERROR.NOT_FOUND.message;
 			return;
 		} else {
-			const data = await new Promise<UserModel | null>((resolve, reject) => {
+		const password_hash: string | null = await Bcrypt.gen_hash(value.password!);
+		const data = await new Promise<UserModel | null>((resolve, reject) => {
 				db.transaction(async (transaction) => {
 					const user_u = {
 						...new UserModel(),
 						...value,
+						password: password_hash,
 						user_id: user.user_id
 					};
 					await transaction.getRepository(UserModel).save({
