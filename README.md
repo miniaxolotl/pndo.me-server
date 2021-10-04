@@ -50,8 +50,9 @@ Software specifications & design documents can be found in the [wiki](/wiki).
 
 ## See Also
 
-- **pndo.me-web - https://github.com/songmawa/pndo.me-web**
-- **pndo.me-app - https://github.com/songmawa/pndo.me-app**
+- **pndome - https://github.com/theluckyegg/pndome**
+- **[legacy] pndo.me-web - https://github.com/theluckyegg/pndo.me-web**
+- **[legacy] pndo.me-app - https://github.com/theluckyegg/pndo.me-app**
 
 ## Contributing
 
