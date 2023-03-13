@@ -1,8 +1,7 @@
-import joi, { object } from "joi";
+import joi from "joi";
 
-const FileUpdateSchema = object({
-	filename: joi.string()
-	.required(),
+const FileUpdateSchema = joi.object({
+	filename: joi.string().required(),
 });
 
 export default FileUpdateSchema;

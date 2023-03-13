@@ -1,21 +1,13 @@
-import joi, { object } from "joi";
+import joi from "joi";
 
-const AlbumSchema = object({
-	title: joi.string()
-	.optional()
-	.allow('')
-	.default(''),
+const AlbumSchema = joi.object({
+	title: joi.string().optional().allow("").default(""),
 
-	password: joi.string()
-	.optional()
-	.min(3)
-	.default(null),
+	password: joi.string().optional().min(3).default(null),
 
-	protected: joi.boolean()
-	.required(),
+	protected: joi.boolean().required(),
 
-	hidden: joi.boolean()
-	.required(),
+	hidden: joi.boolean().required(),
 });
 
 export default AlbumSchema;
